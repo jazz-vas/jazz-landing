@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchMsisdn } from '@/lib/msisdnService';
-import { encrypt } from '@/lib/encryption';
+
+interface ClientConfig {
+  httpsAppUrl: string;
+}
 
 export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -25,32 +27,34 @@ export default function LandingPage() {
     // Fetch MSISDN and redirect
     const fetchAndRedirect = async () => {
       try {
-        const result = await fetchMsisdn();
+        // First, get the client configuration
+        const configResponse = await fetch('/api/config');
+        const config: ClientConfig = await configResponse.json();
+        
+        // Fetch encrypted MSISDN from our API route
+        const msisdnResponse = await fetch('/api/msisdn');
+        const result = await msisdnResponse.json();
         
         if (!result.success || !result.data) {
           // Redirect without MSISDN if fetch fails
-          redirectToApp(id, null);
+          redirectToApp(id, null, config.httpsAppUrl);
           return;
         }
         
-        // Encrypt MSISDN before sending
-        const encryptedMsisdn = encrypt(result.data);
-        
         // Redirect with encrypted MSISDN
-        redirectToApp(id, encryptedMsisdn);
+        redirectToApp(id, result.data, config.httpsAppUrl);
       } catch (err) {
         console.error('Error in fetchAndRedirect:', err);
         // Redirect without MSISDN on error
-        redirectToApp(id, null);
+        // Fallback to default URL if config fetch failed
+        redirectToApp(id, null, 'https://localhost:3000');
       }
     };
     
     fetchAndRedirect();
   }, []);
 
-  const redirectToApp = (clientId: string, encryptedMsisdn: string | null) => {
-    const httpsAppUrl = process.env.NEXT_PUBLIC_HTTPS_APP_URL || 'https://localhost:3000';
-    
+  const redirectToApp = (clientId: string, encryptedMsisdn: string | null, httpsAppUrl: string) => {
     // Build hash parameters
     const hashParams = new URLSearchParams();
     hashParams.set('originateFromLanding', 'true');

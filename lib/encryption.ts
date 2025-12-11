@@ -1,23 +1,39 @@
-import CryptoJS from 'crypto-js';
-
-const ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || 'fallback-key-change-in-production';
+import forge from 'node-forge';
+import { config } from './config';
 
 /**
- * Encrypts a string using AES encryption
+ * Encrypts a string using RSA public key encryption
  * @param text - The text to encrypt
  * @returns The encrypted text as a base64 string
  */
 export function encrypt(text: string): string {
-  const encrypted = CryptoJS.AES.encrypt(text, ENCRYPTION_KEY);
-  return encrypted.toString();
+  try {
+    const publicKeyPem = config.rsaPublicKey;
+    
+    if (!publicKeyPem) {
+      throw new Error('RSA public key not configured');
+    }
+
+    // Parse the public key
+    const publicKey = forge.pki.publicKeyFromPem(publicKeyPem);
+    
+    // Encrypt the text
+    const encrypted = publicKey.encrypt(text, 'RSA-OAEP', {
+      md: forge.md.sha256.create(),
+      mgf1: {
+        md: forge.md.sha256.create()
+      }
+    });
+    
+    // Convert to base64
+    return forge.util.encode64(encrypted);
+  } catch (error) {
+    console.error('Encryption error:', error);
+    throw new Error('Failed to encrypt data');
+  }
 }
 
 /**
- * Decrypts an AES encrypted string
- * @param encryptedText - The encrypted text (base64)
- * @returns The decrypted text
+ * Note: Decryption is not available in this app.
+ * Decryption will be performed by the HTTPS app using the private key.
  */
-export function decrypt(encryptedText: string): string {
-  const decrypted = CryptoJS.AES.decrypt(encryptedText, ENCRYPTION_KEY);
-  return decrypted.toString(CryptoJS.enc.Utf8);
-}

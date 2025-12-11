@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const MSISDN_API_URL = process.env.NEXT_PUBLIC_MSISDN_API_URL || 'http://jazzred-cms-stg.jazz.com.pk/jazz/v1/api/proxy/msisdn';
+import { config } from './config';
 
 export interface MsisdnResponse {
   success: boolean;
@@ -14,7 +13,7 @@ export interface MsisdnResponse {
  */
 export async function fetchMsisdn(): Promise<MsisdnResponse> {
   try {
-    const response = await axios.get(MSISDN_API_URL, {
+    const response = await axios.get(config.msisdnApiUrl, {
       timeout: 10000,
       headers: {
         'Accept': 'application/json',
