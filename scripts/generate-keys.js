@@ -10,18 +10,27 @@
  * - private.pem: Private key (to be used in jazz-products HTTPS app)
  */
 
-const forge = require('node-forge');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
 console.log('Generating RSA key pair (2048-bit)...\n');
 
-// Generate key pair
-const keypair = forge.pki.rsa.generateKeyPair({ bits: 2048, e: 0x10001 });
+// Generate key pair using native crypto
+const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+  modulusLength: 2048,
+  publicKeyEncoding: {
+    type: 'spki',
+    format: 'pem'
+  },
+  privateKeyEncoding: {
+    type: 'pkcs8',
+    format: 'pem'
+  }
+});
 
-// Convert to PEM format
-const publicKeyPem = forge.pki.publicKeyToPem(keypair.publicKey);
-const privateKeyPem = forge.pki.privateKeyToPem(keypair.privateKey);
+const publicKeyPem = publicKey;
+const privateKeyPem = privateKey;
 
 // Save to files
 const keysDir = path.join(__dirname, '..', 'keys');

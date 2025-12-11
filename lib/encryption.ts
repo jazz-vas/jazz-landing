@@ -1,4 +1,4 @@
-import forge from 'node-forge';
+import crypto from 'crypto';
 
 /**
  * Encrypts a string using RSA public key encryption
@@ -12,19 +12,18 @@ export function encrypt(text: string, publicKeyPem: string): string {
       throw new Error('RSA public key not configured');
     }
 
-    // Parse the public key
-    const publicKey = forge.pki.publicKeyFromPem(publicKeyPem);
-    
-    // Encrypt the text
-    const encrypted = publicKey.encrypt(text, 'RSA-OAEP', {
-      md: forge.md.sha256.create(),
-      mgf1: {
-        md: forge.md.sha256.create()
-      }
-    });
+    // Encrypt using RSA-OAEP with SHA-256
+    const encrypted = crypto.publicEncrypt(
+      {
+        key: publicKeyPem,
+        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+        oaepHash: 'sha256',
+      },
+      Buffer.from(text, 'utf8')
+    );
     
     // Convert to base64
-    return forge.util.encode64(encrypted);
+    return encrypted.toString('base64');
   } catch (error) {
     console.error('Encryption error:', error);
     throw new Error('Failed to encrypt data');
