@@ -41,57 +41,60 @@ export default function LandingPage() {
           },
         });
         
-        if (!msisdnResponse.data || !msisdnResponse.data.success || !msisdnResponse.data.data) {
-          // Redirect without MSISDN if fetch fails
-          redirectToApp(id, null, config.httpsAppUrl);
-          return;
-        }
-        
-        // Send raw MSISDN to server proxy for encryption
-        // This prevents MITM attacks - only our server can create valid encrypted MSISDN
+        // Send raw MSISDN (if available) and landing flag to server proxy for encryption
+        // This prevents MITM attacks - only our server can create valid encrypted data
         const encryptResponse = await fetch('/api/msisdn', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ msisdn: msisdnResponse.data.data }),
+          body: JSON.stringify({ 
+            msisdn: msisdnResponse.data?.success && msisdnResponse.data?.data ? msisdnResponse.data.data : null,
+            originateFromLanding: 'true'
+          }),
         });
         
         const encryptResult = await encryptResponse.json();
         
         if (!encryptResult.success || !encryptResult.data) {
-          // Redirect without MSISDN if encryption fails
-          redirectToApp(id, null, config.httpsAppUrl);
+          // Redirect without encrypted data if encryption fails
+          redirectToApp(id, null, null, config.httpsAppUrl);
           return;
         }
         
-        // Redirect with server-encrypted MSISDN
-        redirectToApp(id, encryptResult.data, config.httpsAppUrl);
+        // Redirect with server-encrypted data
+        redirectToApp(
+          id, 
+          encryptResult.data.encryptedMsisdn, 
+          encryptResult.data.encryptedFlag,
+          config.httpsAppUrl
+        );
       } catch (err) {
         console.error('Error in fetchAndRedirect:', err);
         // Redirect without MSISDN on error
         // Fallback to default URL if config fetch failed
-        redirectToApp(id, null, 'https://localhost:3000');
+        redirectToApp(id, null, null, 'https://localhost:3000');
       }
     };
     
     fetchAndRedirect();
   }, []);
 
-  const redirectToApp = (clientId: string, encryptedMsisdn: string | null, httpsAppUrl: string) => {
-    // Build hash parameters
-    const hashParams = new URLSearchParams();
-    hashParams.set('originateFromLanding', 'true');
+  const redirectToApp = (clientId: string, encryptedMsisdn: string | null, encryptedFlag: string | null, httpsAppUrl: string) => {
+    // Build URL with all parameters as query params
+    const url = new URL(httpsAppUrl);
+    url.searchParams.set('clientId', clientId);
     
     if (encryptedMsisdn) {
-      hashParams.set('msisdn', encryptedMsisdn);
+      url.searchParams.set('msisdn', encryptedMsisdn);
     }
     
-    // Build final URL
-    const redirectUrl = `${httpsAppUrl}?clientId=${clientId}#${hashParams.toString()}`;
+    if (encryptedFlag) {
+      url.searchParams.set('originateFromLanding', encryptedFlag);
+    }
     
-    console.log('Redirecting to:', redirectUrl);
-    window.location.href = redirectUrl;
+    console.log('🚀 Redirecting to:', url.toString());
+    window.location.href = url.toString();
   };
 
   if (error) {
