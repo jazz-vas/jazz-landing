@@ -1,13 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { encrypt } from '@/lib/encryption';
 import axios from 'axios';
 
 interface ClientConfig {
   httpsAppUrl: string;
   msisdnApiUrl: string;
-  rsaPublicKey: string;
 }
 
 export default function LandingPage() {
@@ -35,7 +33,7 @@ export default function LandingPage() {
         const configResponse = await fetch('/api/config');
         const config: ClientConfig = await configResponse.json();
         
-        // Fetch MSISDN directly from the endpoint
+        // Fetch MSISDN directly from the backend endpoint (client-side)
         const msisdnResponse = await axios.get(config.msisdnApiUrl, {
           timeout: 10000,
           headers: {
@@ -49,11 +47,26 @@ export default function LandingPage() {
           return;
         }
         
-        // Encrypt MSISDN on the client side using the public key
-        const encryptedMsisdn = encrypt(msisdnResponse.data.data, config.rsaPublicKey);
+        // Send raw MSISDN to server proxy for encryption
+        // This prevents MITM attacks - only our server can create valid encrypted MSISDN
+        const encryptResponse = await fetch('/api/msisdn', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ msisdn: msisdnResponse.data.data }),
+        });
         
-        // Redirect with encrypted MSISDN
-        redirectToApp(id, encryptedMsisdn, config.httpsAppUrl);
+        const encryptResult = await encryptResponse.json();
+        
+        if (!encryptResult.success || !encryptResult.data) {
+          // Redirect without MSISDN if encryption fails
+          redirectToApp(id, null, config.httpsAppUrl);
+          return;
+        }
+        
+        // Redirect with server-encrypted MSISDN
+        redirectToApp(id, encryptResult.data, config.httpsAppUrl);
       } catch (err) {
         console.error('Error in fetchAndRedirect:', err);
         // Redirect without MSISDN on error

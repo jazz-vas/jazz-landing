@@ -17,6 +17,5 @@ export function getClientConfig() {
   return {
     httpsAppUrl: config.httpsAppUrl,
     msisdnApiUrl: config.msisdnApiUrl,
-    rsaPublicKey: config.rsaPublicKey,
   };
 }
