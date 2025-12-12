@@ -6,7 +6,7 @@
 export const config = {
   msisdnApiUrl: process.env.MSISDN_API_URL || 'http://jazzred-cms-stg.jazz.com.pk/jazz/v1/api/proxy/msisdn',
   httpsAppUrl: process.env.HTTPS_APP_URL || 'https://localhost:3000',
-  rsaPublicKey: process.env.RSA_PUBLIC_KEY || '',
+  encryptionSecretKey: process.env.ENCRYPTION_SECRET_KEY || '',
 };
 
 /**

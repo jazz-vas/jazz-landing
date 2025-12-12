@@ -1,36 +1,82 @@
+/**
+ * AES-256-GCM Symmetric Encryption for HTTP Landing Page
+ * Copy this file to your jazz-landing project
+ */
+
 import crypto from 'crypto';
 
+const ALGORITHM = 'aes-256-gcm';
+const IV_LENGTH = 16;
+const AUTH_TAG_LENGTH = 16;
+const KEY_LENGTH = 32;
+
 /**
- * Encrypts a string using RSA public key encryption
- * @param text - The text to encrypt
- * @param publicKeyPem - The RSA public key in PEM format
- * @returns The encrypted text as a base64 string
+ * Encrypts data using AES-256-GCM symmetric encryption
+ * @param plaintext - The text to encrypt (e.g., "923086094856")
+ * @param secretKey - Base64 encoded secret key from .env (ENCRYPTION_SECRET_KEY)
+ * @returns URL-safe base64 encoded encrypted data
  */
-export function encrypt(text: string, publicKeyPem: string): string {
+export function encrypt(plaintext: string, secretKey: string): string {
   try {
-    if (!publicKeyPem) {
-      throw new Error('RSA public key not configured');
+    // Decode the secret key from base64
+    const key = Buffer.from(secretKey, 'base64');
+    
+    if (key.length !== KEY_LENGTH) {
+      throw new Error(`Secret key must be ${KEY_LENGTH} bytes (got ${key.length})`);
     }
 
-    // Encrypt using RSA-OAEP with SHA-256
-    const encrypted = crypto.publicEncrypt(
-      {
-        key: publicKeyPem,
-        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-        oaepHash: 'sha256',
-      },
-      Buffer.from(text, 'utf8')
-    );
+    // Generate random IV (Initialization Vector)
+    const iv = crypto.randomBytes(IV_LENGTH);
     
-    // Convert to base64
-    return encrypted.toString('base64');
-  } catch (error) {
-    console.error('Encryption error:', error);
-    throw new Error('Failed to encrypt data');
+    // Create cipher
+    const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+    
+    // Encrypt the data
+    let encrypted = cipher.update(plaintext, 'utf8');
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    
+    // Get authentication tag
+    const authTag = cipher.getAuthTag();
+    
+    // Combine IV + encrypted data + auth tag
+    const combined = Buffer.concat([iv, encrypted, authTag]);
+    
+    // Convert to URL-safe base64 (no +/= characters)
+    const base64 = combined.toString('base64');
+    const urlSafeBase64 = base64
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '~');
+    
+    console.log('✅ [HTTP] Encrypted successfully');
+    console.log('   Input:', plaintext);
+    console.log('   Output length:', urlSafeBase64.length);
+    
+    return urlSafeBase64;
+  } catch (error: any) {
+    console.error('❌ [HTTP] Encryption failed:', error.message);
+    throw new Error('Encryption failed');
   }
 }
 
-/**
- * Note: Decryption is not available in this app.
- * Decryption will be performed by the HTTPS app using the private key.
- */
+// Example usage in your redirect function:
+/*
+const secretKey = process.env.ENCRYPTION_SECRET_KEY!;
+
+const redirectToApp = (clientId: string, msisdn: string, httpsAppUrl: string) => {
+  // Encrypt MSISDN
+  const encryptedMsisdn = encryptData(msisdn, secretKey);
+  
+  // Encrypt landing origin flag
+  const encryptedFlag = encryptData('true', secretKey);
+  
+  // Build URL
+  const url = new URL(httpsAppUrl);
+  url.searchParams.set('clientId', clientId);
+  url.searchParams.set('msisdn', encryptedMsisdn);
+  url.searchParams.set('originateFromLanding', encryptedFlag);
+  
+  console.log('🚀 Redirecting to:', url.toString());
+  window.location.href = url.toString();
+};
+*/

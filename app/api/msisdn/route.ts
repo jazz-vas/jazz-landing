@@ -22,12 +22,12 @@ export async function POST(request: Request) {
     
     // Encrypt MSISDN if provided
     if (msisdn) {
-      result.encryptedMsisdn = encrypt(msisdn, config.rsaPublicKey);
+      result.encryptedMsisdn = encrypt(msisdn, config.encryptionSecretKey);
     }
     
     // Encrypt landing flag if provided
     if (originateFromLanding) {
-      result.encryptedFlag = encrypt(originateFromLanding, config.rsaPublicKey);
+      result.encryptedFlag = encrypt(originateFromLanding, config.encryptionSecretKey);
     }
     
     return NextResponse.json({

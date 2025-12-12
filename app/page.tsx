@@ -87,15 +87,17 @@ export default function LandingPage() {
     url.searchParams.set('clientId', clientId);
     
     if (encryptedMsisdn) {
+      console.log('🚀 Encrypted MSISDN:', encryptedMsisdn);
       url.searchParams.set('msisdn', encryptedMsisdn);
     }
     
     if (encryptedFlag) {
+      console.log('🚀 Encrypted Landing Flag:', encryptedFlag);
       url.searchParams.set('originateFromLanding', encryptedFlag);
     }
     
     console.log('🚀 Redirecting to:', url.toString());
-    // window.location.href = url.toString();
+    window.location.href = url.toString();
   };
 
   if (error) {
