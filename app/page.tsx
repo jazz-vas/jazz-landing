@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import LoadingScreen from './components/LoadingScreen';
 
 interface ClientConfig {
   httpsAppUrl: string;
@@ -94,7 +95,7 @@ export default function LandingPage() {
     }
     
     console.log('🚀 Redirecting to:', url.toString());
-    window.location.href = url.toString();
+    // window.location.href = url.toString();
   };
 
   if (error) {
@@ -117,36 +118,5 @@ export default function LandingPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
-        <div className="flex flex-col items-center text-center space-y-6">
-          {/* Jazz Logo */}
-          <div className="relative w-32 h-16">
-            <img
-              src="/jazz-logo.webp"
-              alt="Jazz Logo"
-              className="object-contain w-full h-full"
-            />
-          </div>
-          
-          {/* Loading Animation */}
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-red-200 border-t-red-600 rounded-full animate-spin"></div>
-          </div>
-          
-          {/* Loading Text */}
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-gray-900">Loading...</h1>
-            <p className="text-gray-600">Please wait while we verify your connection</p>
-          </div>
-          
-          {/* Progress Indicator */}
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div className="bg-gradient-to-r from-red-600 to-orange-500 h-2 rounded-full animate-pulse" style={{ width: '70%' }}></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <LoadingScreen />;
 }
