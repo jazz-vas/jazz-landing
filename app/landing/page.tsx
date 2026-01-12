@@ -18,6 +18,7 @@ export default function LandingPage() {
     // Get clientId from URL params
     const params = new URLSearchParams(window.location.search);
     const id = params.get('clientId');
+    console.log('🔍 clientId from URL params:', id);
     
     if (!id) {
       setError('Missing clientId parameter');
