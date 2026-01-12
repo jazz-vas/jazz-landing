@@ -1,0 +1,17 @@
+# .github/workflows/trigger-jenkins.yml
+
+name: Development Jenkins Trigger
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  trigger-jenkins:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Jenkins Job
+        run: |
+          curl -X POST "https://jazzred-cms-prod.jazz.com.pk/jenkins/job/jazz-vas/job/ocp-stg/job/vas-landing/build" \
+            --user "github:${{ secrets.VAS_JENKINS_TOKEN }}"
