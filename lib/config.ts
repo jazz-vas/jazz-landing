@@ -1,6 +1,7 @@
 /**
  * Server-side configuration
  * These values are injected at runtime and are NOT exposed to the client
+ * All configuration is internal to the server - no API endpoint exposes these directly
  */
 
 // Validate critical config at module load time
@@ -14,14 +15,3 @@ export const config = {
   httpsAppUrl: process.env.HTTPS_APP_URL || 'https://jazzred-cms-stg.jazz.com.pk',
   encryptionSecretKey,
 };
-
-/**
- * Client-safe configuration
- * Only expose what's absolutely necessary for the client
- * DO NOT include encryption key or sensitive URLs
- */
-export function getClientConfig() {
-  return {
-    httpsAppUrl: config.httpsAppUrl,
-  };
-}
