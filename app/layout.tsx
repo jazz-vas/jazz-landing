@@ -17,7 +17,24 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <head>
+        {/* Mobile viewport configuration for consistent appearance */}
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+        />
+        {/* iOS web app support */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        {/* Theme color for Android */}
+        <meta name="theme-color" content="#ffffff" />
+      </head>
+      <body className="antialiased h-screen-dynamic">
+        <main className="h-full">{children}</main>
+      </body>
     </html>
   );
 }
