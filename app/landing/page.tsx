@@ -1,110 +1,121 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import LoadingScreen from '../components/LoadingScreen';
-import { getGA4ClientId } from '@/lib/ga4Client';
+import { API_TIMEOUT_MS, ERROR_MESSAGES } from '@/lib/constants';
 
-interface ClientConfig {
-  httpsAppUrl: string;
-  msisdnApiUrl: string;
+interface ProcessResponse {
+  success: boolean;
+  data?: {
+    encryptedMsisdn?: string;
+    encryptedFlag?: string;
+    httpsAppUrl: string;
+  };
+  message?: string;
+}
+
+/**
+ * Validates clientId parameter format
+ */
+function isValidClientId(clientId: string): boolean {
+  // Alphanumeric, hyphens, underscores - up to 256 chars
+  return /^[a-zA-Z0-9_-]{1,256}$/.test(clientId);
 }
 
 export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [clientId, setClientId] = useState<string | null>(null);
 
   useEffect(() => {
     // Get clientId from URL params
     const params = new URLSearchParams(window.location.search);
-    const id = params.get('clientId');
-    console.log('🔍 clientId from URL params:', id);
+    const clientId = params.get('clientId');
     
-    if (!id) {
-      setError('Missing clientId parameter');
+    if (!clientId) {
+      setError(ERROR_MESSAGES.MISSING_CLIENT_ID);
+      setIsLoading(false);
+      return;
+    }
+
+    if (!isValidClientId(clientId)) {
+      setError(ERROR_MESSAGES.INVALID_CLIENT_ID);
       setIsLoading(false);
       return;
     }
     
-    setClientId(id);
-    
-    // Fetch MSISDN and redirect
-    const fetchAndRedirect = async () => {
+    // Single unified call to /api/process endpoint
+    // This handles: config fetching, MSISDN fetching, and encryption server-side
+    const processAndRedirect = async () => {
       try {
-        // Get GA4 Client ID
-        const gaClientId = await getGA4ClientId();
-        console.log('✅ GA4 Client ID obtained:', gaClientId);
-        
-        // First, get the client configuration
-        const configResponse = await fetch('/api/config');
-        const config: ClientConfig = await configResponse.json();
-        
-        // Fetch MSISDN directly from the backend endpoint (client-side)
-        const msisdnResponse = await axios.get(config.msisdnApiUrl, {
-          timeout: 10000,
-          headers: {
-            'Accept': 'application/json',
-          },
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+        const processResponse = await fetch(`/api/process?clientId=${encodeURIComponent(clientId)}`, {
+          signal: controller.signal,
         });
-        
-        // Send raw MSISDN (if available) and landing flag to server proxy for encryption
-        // This prevents MITM attacks - only our server can create valid encrypted data
-        const encryptResponse = await fetch('/api/msisdn', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(gaClientId && { 'ga-client-id': gaClientId }),
-          },
-          body: JSON.stringify({ 
-            msisdn: msisdnResponse.data?.success && msisdnResponse.data?.data ? msisdnResponse.data.data : null,
-            originateFromLanding: 'true'
-          }),
-        });
-        
-        const encryptResult = await encryptResponse.json();
-        
-        if (!encryptResult.success || !encryptResult.data) {
-          // Redirect without encrypted data if encryption fails
-          redirectToApp(id, null, null, config.httpsAppUrl);
+
+        clearTimeout(timeoutId);
+
+        if (!processResponse.ok) {
+          setError('Failed to process request. Please try again.');
+          setIsLoading(false);
           return;
         }
+
+        const result: ProcessResponse = await processResponse.json();
+
+        if (!result.success || !result.data) {
+          setError(result.message || 'Failed to process request');
+          setIsLoading(false);
+          return;
+        }
+
+        // Build redirect URL with encrypted data
+        redirectToApp(clientId, result.data);
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error 
+          ? (err.name === 'AbortError' ? 'Request timeout' : 'Network error')
+          : 'Unknown error occurred';
         
-        // Redirect with server-encrypted data
-        redirectToApp(
-          id, 
-          encryptResult.data.encryptedMsisdn, 
-          encryptResult.data.encryptedFlag,
-          config.httpsAppUrl
-        );
-      } catch (err) {
-        console.error('Error in fetchAndRedirect:', err);
-        // Redirect without MSISDN on error
-        // Fallback to default URL if config fetch failed
-        redirectToApp(id, null, null, "https://jazzred-cms-stg.jazz.com.pk");
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[DEBUG] Process error:', err);
+        }
+
+        setError(errorMsg);
+        setIsLoading(false);
       }
     };
     
-    fetchAndRedirect();
+    processAndRedirect();
   }, []);
 
-  const redirectToApp = (clientId: string, encryptedMsisdn: string | null, encryptedFlag: string | null, httpsAppUrl: string) => {
-    // Build URL with all parameters as query params
-    const url = new URL(httpsAppUrl);
-    url.searchParams.set('clientId', clientId);
-    
-    if (encryptedMsisdn) {
-      console.log('🚀 Encrypted MSISDN:', encryptedMsisdn);
-      url.searchParams.set('msisdn', encryptedMsisdn);
+  const redirectToApp = (
+    clientId: string, 
+    data: { encryptedMsisdn?: string; encryptedFlag?: string; httpsAppUrl: string }
+  ): void => {
+    try {
+      const url = new URL(data.httpsAppUrl);
+      url.searchParams.set('clientId', clientId);
+      
+      if (data.encryptedMsisdn) {
+        url.searchParams.set('msisdn', data.encryptedMsisdn);
+      }
+      
+      if (data.encryptedFlag) {
+        url.searchParams.set('originateFromLanding', data.encryptedFlag);
+      }
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[DEBUG] Redirecting to app');
+      }
+
+      window.location.href = url.toString();
+    } catch (err) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[DEBUG] Redirect error:', err);
+      }
+      setError('Failed to redirect. Please contact support.');
     }
-    
-    if (encryptedFlag) {
-      console.log('🚀 Encrypted Landing Flag:', encryptedFlag);
-      url.searchParams.set('originateFromLanding', encryptedFlag);
-    }
-    
-    console.log('🚀 Redirecting to:', url.toString());
-    window.location.href = url.toString();
   };
 
   if (error) {

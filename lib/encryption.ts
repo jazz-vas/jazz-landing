@@ -48,13 +48,16 @@ export function encrypt(plaintext: string, secretKey: string): string {
       .replace(/\//g, '_')
       .replace(/=/g, '~');
     
-    console.log('✅ [HTTP] Encrypted successfully');
-    console.log('   Input:', plaintext);
-    console.log('   Output length:', urlSafeBase64.length);
+    // Only log in development to avoid exposing data in production logs
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ [HTTP] Encrypted successfully');
+      console.log('   Output length:', urlSafeBase64.length);
+    }
     
     return urlSafeBase64;
-  } catch (error: any) {
-    console.error('❌ [HTTP] Encryption failed:', error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ [HTTP] Encryption failed:', errorMessage);
     throw new Error('Encryption failed');
   }
 }
