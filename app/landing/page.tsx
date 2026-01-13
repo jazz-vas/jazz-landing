@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import LoadingScreen from '../components/LoadingScreen';
+import { getGA4ClientId } from '@/lib/ga4Client';
 
 interface ClientConfig {
   httpsAppUrl: string;
@@ -31,6 +32,10 @@ export default function LandingPage() {
     // Fetch MSISDN and redirect
     const fetchAndRedirect = async () => {
       try {
+        // Get GA4 Client ID
+        const gaClientId = await getGA4ClientId();
+        console.log('✅ GA4 Client ID obtained:', gaClientId);
+        
         // First, get the client configuration
         const configResponse = await fetch('/api/config');
         const config: ClientConfig = await configResponse.json();
@@ -49,6 +54,7 @@ export default function LandingPage() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...(gaClientId && { 'ga-client-id': gaClientId }),
           },
           body: JSON.stringify({ 
             msisdn: msisdnResponse.data?.success && msisdnResponse.data?.data ? msisdnResponse.data.data : null,
