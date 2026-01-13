@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Script from "next/script";
 
 export const metadata: Metadata = {
   title: "Jazz Landing - Loading",
@@ -31,6 +32,31 @@ export default function RootLayout({
         />
         {/* Theme color for Android */}
         <meta name="theme-color" content="#ffffff" />
+        
+        {/* Google Tag Manager preconnect */}
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        
+        {/* Global Google Tag (gtag.js) - GA4 & Google Ads */}
+        <link
+          rel="preload"
+          as="script"
+          href="https://www.googletagmanager.com/gtag/js?id=G-7H51N4FGGD"
+          crossOrigin="anonymous"
+        />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-7H51N4FGGD"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics-config" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'AW-10779246142');
+            // GA4 Configuration
+            gtag('config', 'G-7H51N4FGGD');
+          `}
+        </Script>
       </head>
       <body className="antialiased h-screen-dynamic">
         <main className="h-full">{children}</main>
