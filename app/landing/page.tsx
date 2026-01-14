@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import LoadingScreen from '../components/LoadingScreen';
-import { getGA4ClientId } from '@/lib/ga4Client';
+import { getGA4ClientIdAsync } from '@/lib/ga4Client';
 import { API_TIMEOUT_MS, ERROR_MESSAGES } from '@/lib/constants';
 
 interface ProcessResponse {
@@ -48,8 +48,8 @@ export default function LandingPage() {
     // This handles: config fetching, MSISDN fetching, and encryption server-side
     const processAndRedirect = async () => {
       try {
-        // Get GA4 client ID
-        const gaClientId = await getGA4ClientId();
+        // Get GA4 client ID with retry logic (waits for gtag to load)
+        const gaClientId = await getGA4ClientIdAsync();
         console.log('[INFO] GA4 Client ID obtained:', gaClientId ? 'yes' : 'no');
 
         const controller = new AbortController();
@@ -121,7 +121,7 @@ export default function LandingPage() {
         console.log('[DEBUG] Redirecting to app');
       }
 
-      window.location.href = url.toString();
+      // window.location.href = url.toString();
     } catch (err) {
       if (process.env.NODE_ENV === 'development') {
         console.error('[DEBUG] Redirect error:', err);
