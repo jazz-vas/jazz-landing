@@ -49,6 +49,7 @@ export async function GET(request: Request) {
     // This keeps the external API URL internal and secure
     let msisdn: string | null = null;
     let msisdnError: string | null = null;
+    console.log('[INFO] Fetching MSISDN from external API for clientId:', clientId);
 
     try {
       const controller = new AbortController();
