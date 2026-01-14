@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start -p 3001",
+    "start": "PORT=3001 node .next/standalone/server.js",
     "lint": "eslint",
     "generate-keys": "node scripts/generate-keys.js"
   },
