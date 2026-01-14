@@ -121,7 +121,7 @@ export default function LandingPage() {
         console.log('[DEBUG] Redirecting to app');
       }
 
-      // window.location.href = url.toString();
+      window.location.href = url.toString();
     } catch (err) {
       if (process.env.NODE_ENV === 'development') {
         console.error('[DEBUG] Redirect error:', err);
