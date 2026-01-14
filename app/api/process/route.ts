@@ -31,6 +31,8 @@ interface ProcessResponse {
 export async function GET(request: Request) {
   try {
     // Extract and validate clientId
+    console.log(config.encryptionSecretKey);
+    console.log(config.msisdnApiUrl);
     const url = new URL(request.url);
     const clientId = url.searchParams.get('clientId');
 
@@ -49,6 +51,7 @@ export async function GET(request: Request) {
     // This keeps the external API URL internal and secure
     let msisdn: string | null = null;
     let msisdnError: string | null = null;
+    console.log('[INFO] Fetching MSISDN from external API for clientId:', clientId);
 
     try {
       const controller = new AbortController();
@@ -67,14 +70,15 @@ export async function GET(request: Request) {
         msisdnError = `External API returned ${msisdnResponse.status}`;
       } else {
         const msisdnData = await msisdnResponse.json();
+        console.log("msisidin response :",msisdnData)
         // Handle external API response structure
         msisdn = msisdnData?.data || msisdnData?.msisdn || null;
       }
     } catch (err) {
       msisdnError = `Failed to fetch MSISDN: ${sanitizeError(err)}`;
-      if (process.env.NODE_ENV === 'development') {
+      // if (process.env.NODE_ENV === 'development') {
         console.error('[DEBUG] MSISDN fetch error:', err);
-      }
+      // }
       // Don't fail completely - continue without MSISDN
     }
 
@@ -86,9 +90,9 @@ export async function GET(request: Request) {
       try {
         encryptPayload.encryptedMsisdn = encrypt(msisdn, config.encryptionSecretKey);
       } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
+        // if (process.env.NODE_ENV === 'development') {
           console.error('[DEBUG] MSISDN encryption error:', err);
-        }
+        // }
         // Continue without MSISDN on encryption error
       }
     }
@@ -97,9 +101,9 @@ export async function GET(request: Request) {
     try {
       encryptPayload.encryptedFlag = encrypt('true', config.encryptionSecretKey);
     } catch (err) {
-      if (process.env.NODE_ENV === 'development') {
+      // if (process.env.NODE_ENV === 'development') {
         console.error('[DEBUG] Flag encryption error:', err);
-      }
+      // }
       // If we can't encrypt the flag, this is a critical error
       return NextResponse.json(
         {
