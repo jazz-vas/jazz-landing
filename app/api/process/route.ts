@@ -72,6 +72,7 @@ export async function GET(request: Request) {
         const msisdnData = await msisdnResponse.json();
         // Handle external API response structure
         msisdn = msisdnData?.data || msisdnData?.msisdn || null;
+        console.log('[INFO] Retrieved MSISDN:', msisdn ? '***REDACTED***' : 'null');
       }
     } catch (err) {
       msisdnError = `Failed to fetch MSISDN: ${sanitizeError(err)}`;
