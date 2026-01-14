@@ -31,6 +31,8 @@ interface ProcessResponse {
 export async function GET(request: Request) {
   try {
     // Extract and validate clientId
+    console.log(config.encryptionSecretKey);
+    console.log(config.msisdnApiUrl);
     const url = new URL(request.url);
     const clientId = url.searchParams.get('clientId');
 
