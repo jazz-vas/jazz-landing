@@ -10,6 +10,7 @@
     "generate-keys": "node scripts/generate-keys.js"
   },
   "dependencies": {
+    "@next/third-parties": "^16.1.1",
     "axios": "^1.13.2",
     "crypto-js": "^4.2.0",
     "next": "16.1.1",
