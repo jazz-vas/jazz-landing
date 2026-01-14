@@ -35,6 +35,7 @@ export async function GET(request: Request) {
     console.log(config.msisdnApiUrl);
     const url = new URL(request.url);
     const clientId = url.searchParams.get('clientId');
+    const gaClientId = request.headers.get('ga-client-id');
 
     const clientIdValidation = validateClientId(clientId);
     if (!clientIdValidation.valid) {
@@ -52,16 +53,27 @@ export async function GET(request: Request) {
     let msisdn: string | null = null;
     let msisdnError: string | null = null;
     console.log('[INFO] Fetching MSISDN from external API for clientId:', clientId);
+    if (gaClientId) {
+      console.log('[INFO] GA4 Client ID:', gaClientId);
+    }
 
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
 
+      // Build headers for MSISDN API request
+      const msisdnHeaders: HeadersInit = {
+        'Accept': 'application/json',
+      };
+
+      // Include GA4 client ID if available
+      if (gaClientId) {
+        msisdnHeaders['ga-client-id'] = gaClientId;
+      }
+
       const msisdnResponse = await fetch(config.msisdnApiUrl, {
         signal: controller.signal,
-        headers: {
-          'Accept': 'application/json',
-        },
+        headers: msisdnHeaders,
       });
 
       clearTimeout(timeoutId);
