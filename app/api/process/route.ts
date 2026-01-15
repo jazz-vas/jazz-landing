@@ -37,16 +37,16 @@ export async function GET(request: Request) {
     const clientId = url.searchParams.get('clientId');
     const gaClientId = request.headers.get('ga-client-id');
 
-    const clientIdValidation = validateClientId(clientId);
-    if (!clientIdValidation.valid) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: clientIdValidation.error,
-        },
-        { status: 400 }
-      );
-    }
+    // const clientIdValidation = validateClientId(clientId);
+    // if (!clientIdValidation.valid) {
+    //   return NextResponse.json(
+    //     {
+    //       success: false,
+    //       message: clientIdValidation.error,
+    //     },
+    //     { status: 400 }
+    //   );
+    // }
 
     // Fetch MSISDN from external API server-side
     // This keeps the external API URL internal and secure
