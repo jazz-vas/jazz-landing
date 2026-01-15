@@ -2,15 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import LoadingScreen from '../components/LoadingScreen';
-import { getGA4ClientIdAsync } from '@/lib/ga4Client';
-import { API_TIMEOUT_MS, ERROR_MESSAGES } from '@/lib/constants';
+import { getGA4ClientIdAsync } from '@/lib/ga4Client'
+import { API_TIMEOUT_MS, ERROR_MESSAGES } from '@/lib/constants'
 
-interface ProcessResponse {
+interface ClientConfig {
+  httpsAppUrl: string;
+  msisdnApiUrl: string;
+}
+
+interface EncryptResponse {
   success: boolean;
   data?: {
     encryptedMsisdn?: string;
     encryptedFlag?: string;
-    httpsAppUrl: string;
   };
   message?: string;
 }
@@ -31,7 +35,7 @@ export default function LandingPage() {
     // Get clientId from URL params
     const params = new URLSearchParams(window.location.search);
     const clientId = params.get('clientId');
-    
+
     if (!clientId) {
       setError(ERROR_MESSAGES.MISSING_CLIENT_ID);
       setIsLoading(false);
@@ -43,91 +47,110 @@ export default function LandingPage() {
     //   setIsLoading(false);
     //   return;
     // }
-    
-    // Single unified call to /api/process endpoint
-    // This handles: config fetching, MSISDN fetching, and encryption server-side
+
+    // Three-step process: 1) Get config, 2) Fetch MSISDN client-side, 3) Encrypt server-side
     const processAndRedirect = async () => {
       try {
+        // Step 1: Get client configuration
+        const configResponse = await fetch('/api/config');
+        if (!configResponse.ok) {
+          throw new Error('Failed to fetch configuration');
+        }
+        const config: ClientConfig = await configResponse.json();
+
         // Get GA4 client ID with retry logic (waits for gtag to load)
         const gaClientId = await getGA4ClientIdAsync();
-        console.log('[INFO] GA4 Client ID obtained:', gaClientId ? 'yes' : 'no');
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+        // Step 2: Fetch MSISDN from external API (client-side)
+        let msisdn: string | null = null;
 
-        // Build headers
-        const headers: HeadersInit = {};
-        if (gaClientId) {
-          headers['ga-client-id'] = gaClientId;
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+          // Build headers for MSISDN API request
+          const msisdnHeaders: HeadersInit = {
+            'Accept': 'application/json',
+          };
+
+          // Include GA4 client ID if available
+          if (gaClientId) {
+            msisdnHeaders['ga-client-id'] = gaClientId;
+          }
+
+          console.log("configuratuon",config)
+
+          const msisdnResponse = await fetch(config!.msisdnApiUrl, {
+            signal: controller.signal,
+            headers: msisdnHeaders,
+          });
+
+          clearTimeout(timeoutId);
+
+          if (msisdnResponse.ok) {
+            const msisdnData = await msisdnResponse.json();
+            // Handle external API response structure
+            msisdn = msisdnData?.data || msisdnData?.msisdn || null;
+          }
+        } catch (msisdnErr) {
+          // Continue without MSISDN - not a critical failure
         }
 
-        const processResponse = await fetch(`/api/process?clientId=${encodeURIComponent(clientId)}`, {
-          signal: controller.signal,
-          headers,
+        // Step 3: Send raw MSISDN and landing flag to server for encryption
+        const encryptResponse = await fetch('/api/msisdn', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            msisdn: msisdn,
+            originateFromLanding: 'true'
+          }),
         });
 
-        clearTimeout(timeoutId);
+        const encryptResult: EncryptResponse = await encryptResponse.json();
 
-        if (!processResponse.ok) {
-          setError('Failed to process request. Please try again.');
-          setIsLoading(false);
+        if (!encryptResult.success || !encryptResult.data) {
+          // Redirect without encrypted data if encryption fails
+          redirectToApp(clientId, null, null, config.httpsAppUrl);
           return;
         }
 
-        const result: ProcessResponse = await processResponse.json();
-
-        if (!result.success || !result.data) {
-          setError(result.message || 'Failed to process request');
-          setIsLoading(false);
-          return;
-        }
-
-        // Build redirect URL with encrypted data
-        redirectToApp(clientId, result.data);
+        // Redirect with server-encrypted data
+        redirectToApp(
+          clientId,
+          encryptResult.data.encryptedMsisdn || null,
+          encryptResult.data.encryptedFlag || null,
+          config.httpsAppUrl
+        );
       } catch (err: unknown) {
-        const errorMsg = err instanceof Error 
-          ? (err.name === 'AbortError' ? 'Request timeout' : 'Network error')
-          : 'Unknown error occurred';
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.error('[DEBUG] Process error:', err);
-        }
-
-        setError(errorMsg);
+        // Show error if config fetch or any critical step fails
+        setError('Failed to load configuration. Please try again later.');
         setIsLoading(false);
       }
     };
-    
+
     processAndRedirect();
   }, []);
 
   const redirectToApp = (
-    clientId: string, 
-    data: { encryptedMsisdn?: string; encryptedFlag?: string; httpsAppUrl: string }
+    clientId: string,
+    encryptedMsisdn: string | null,
+    encryptedFlag: string | null,
+    httpsAppUrl: string
   ): void => {
-    try {
-      const url = new URL(data.httpsAppUrl);
-      url.searchParams.set('clientId', clientId);
-      
-      if (data.encryptedMsisdn) {
-        url.searchParams.set('msisdn', data.encryptedMsisdn);
-      }
-      
-      if (data.encryptedFlag) {
-        url.searchParams.set('originateFromLanding', data.encryptedFlag);
-      }
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[DEBUG] Redirecting to app');
-      }
+    const url = new URL(httpsAppUrl);
+    url.searchParams.set('clientId', clientId);
 
-      window.location.href = url.toString();
-    } catch (err) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('[DEBUG] Redirect error:', err);
-      }
-      setError('Failed to redirect. Please contact support.');
+    if (encryptedMsisdn) {
+      url.searchParams.set('msisdn', encryptedMsisdn);
     }
+
+    if (encryptedFlag) {
+      url.searchParams.set('originateFromLanding', encryptedFlag);
+    }
+
+    window.location.href = url.toString();
   };
 
   if (error) {

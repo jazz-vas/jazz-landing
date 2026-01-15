@@ -82,14 +82,14 @@ export async function GET(request: Request) {
         msisdnError = `External API returned ${msisdnResponse.status}`;
       } else {
         const msisdnData = await msisdnResponse.json();
-        console.log("msisidin response :",msisdnData)
+        console.log("msisidin response :", msisdnData)
         // Handle external API response structure
         msisdn = msisdnData?.data || msisdnData?.msisdn || null;
       }
     } catch (err) {
       msisdnError = `Failed to fetch MSISDN: ${sanitizeError(err)}`;
       // if (process.env.NODE_ENV === 'development') {
-        console.error('[DEBUG] MSISDN fetch error:', err);
+      console.error('[DEBUG] MSISDN fetch error:', err);
       // }
       // Don't fail completely - continue without MSISDN
     }
@@ -103,7 +103,7 @@ export async function GET(request: Request) {
         encryptPayload.encryptedMsisdn = encrypt(msisdn, config.encryptionSecretKey);
       } catch (err) {
         // if (process.env.NODE_ENV === 'development') {
-          console.error('[DEBUG] MSISDN encryption error:', err);
+        console.error('[DEBUG] MSISDN encryption error:', err);
         // }
         // Continue without MSISDN on encryption error
       }
@@ -114,7 +114,7 @@ export async function GET(request: Request) {
       encryptPayload.encryptedFlag = encrypt('true', config.encryptionSecretKey);
     } catch (err) {
       // if (process.env.NODE_ENV === 'development') {
-        console.error('[DEBUG] Flag encryption error:', err);
+      console.error('[DEBUG] Flag encryption error:', err);
       // }
       // If we can't encrypt the flag, this is a critical error
       return NextResponse.json(
