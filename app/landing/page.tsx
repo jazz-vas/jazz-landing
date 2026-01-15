@@ -38,11 +38,11 @@ export default function LandingPage() {
       return;
     }
 
-    if (!isValidClientId(clientId)) {
-      setError(ERROR_MESSAGES.INVALID_CLIENT_ID);
-      setIsLoading(false);
-      return;
-    }
+    // if (!isValidClientId(clientId)) {
+    //   setError(ERROR_MESSAGES.INVALID_CLIENT_ID);
+    //   setIsLoading(false);
+    //   return;
+    // }
     
     // Single unified call to /api/process endpoint
     // This handles: config fetching, MSISDN fetching, and encryption server-side
