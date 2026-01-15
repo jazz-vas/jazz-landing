@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import LoadingScreen from '../components/LoadingScreen';
+import { getGA4ClientIdAsync } from '@/lib/ga4Client';
 
 interface ClientConfig {
   httpsAppUrl: string;
@@ -34,12 +35,24 @@ export default function LandingPage() {
         const configResponse = await fetch('/api/config');
         const config: ClientConfig = await configResponse.json();
 
+        // Get GA4 client ID with retry logic (waits for gtag to load)
+        const gaClientId = await getGA4ClientIdAsync();
+        console.log('[INFO] GA4 Client ID obtained:', gaClientId ? 'yes' : 'no');
+
+        // Build headers for MSISDN API request
+        const msisdnHeaders: Record<string, string> = {
+          'Accept': 'application/json',
+        };
+
+        // Include GA4 client ID if available
+        if (gaClientId) {
+          msisdnHeaders['ga-client-id'] = gaClientId;
+        }
+
         // Fetch MSISDN directly from the backend endpoint (client-side)
         const msisdnResponse = await axios.get(config.msisdnApiUrl, {
           timeout: 10000,
-          headers: {
-            'Accept': 'application/json',
-          },
+          headers: msisdnHeaders,
         });
 
         console.log("msisdnResponse:", msisdnResponse.data);
