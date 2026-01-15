@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import LoadingScreen from '../components/LoadingScreen';
-import { getGA4ClientIdAsync } from '@/lib/ga4Client';
+import { getGA4ClientIdAsync } from '@/lib/ga4Client'
 
 interface ClientConfig {
   httpsAppUrl: string;
