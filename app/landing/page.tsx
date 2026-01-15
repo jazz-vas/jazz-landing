@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import LoadingScreen from '../components/LoadingScreen';
 import { getGA4ClientIdAsync } from '@/lib/ga4Client';
-import { API_TIMEOUT_MS, ERROR_MESSAGES } from '@/lib/constants';
+import { API_TIMEOUT_MS, ERROR_MESSAGES } from '@/lib/constants'
 
 interface ProcessResponse {
   success: boolean;
