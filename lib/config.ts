@@ -4,8 +4,8 @@
  */
 
 export const config = {
-  msisdnApiUrl: process.env.MSISDN_API_URL || 'http://jazzred-cms-stg.jazz.com.pk/jazz/v1/api/proxy/msisdn',
-  httpsAppUrl: process.env.HTTPS_APP_URL || 'https://jazzred-cms-stg.jazz.com.pk',
+  msisdnApiUrl: process.env.MSISDN_API_URL || '',
+  httpsAppUrl: process.env.HTTPS_APP_URL || '',
   encryptionSecretKey: process.env.ENCRYPTION_SECRET_KEY || '',
 };
 
