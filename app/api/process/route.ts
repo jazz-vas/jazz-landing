@@ -35,14 +35,14 @@ export async function GET(request: Request) {
     console.log(config.msisdnApiUrl);
     const url = new URL(request.url);
     const clientId = url.searchParams.get('clientId');
-    const gaClientId = request.headers.get('ga-client-id');
+    const gaClientId = request.headers.get('ga-client-id')
 
     // const clientIdValidation = validateClientId(clientId);
     // if (!clientIdValidation.valid) {
     //   return NextResponse.json(
     //     {
     //       success: false,
-    //       message: clientIdValidation.error,
+    //       message: clientIdValidation.error, 
     //     },
     //     { status: 400 }
     //   );
