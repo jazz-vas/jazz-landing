@@ -73,14 +73,15 @@ export default function LandingPage() {
             'Accept': 'application/json',
           };
 
-          // Include GA4 client ID if available
-          // if (gaClientId) {
-          //   msisdnHeaders['ga-client-id'] = gaClientId;
-          // }
+          // Build URL with GA4 client ID as query parameter
+          const msisdnUrl = new URL(config.msisdnApiUrl);
+          if (gaClientId) {
+            msisdnUrl.searchParams.set('ga-client-id', gaClientId);
+          }
 
           console.log("configuratuon",config)
 
-          const msisdnResponse = await fetch(config!.msisdnApiUrl, {
+          const msisdnResponse = await fetch(msisdnUrl.toString(), {
             signal: controller.signal,
             headers: msisdnHeaders,
           });
@@ -150,7 +151,7 @@ export default function LandingPage() {
       url.searchParams.set('originateFromLanding', encryptedFlag);
     }
 
-    window.location.href = url.toString();
+    // window.location.href = url.toString();
   };
 
   if (error) {
