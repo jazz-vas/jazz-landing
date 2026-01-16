@@ -74,9 +74,9 @@ export default function LandingPage() {
           };
 
           // Include GA4 client ID if available
-          if (gaClientId) {
-            msisdnHeaders['ga-client-id'] = gaClientId;
-          }
+          // if (gaClientId) {
+          //   msisdnHeaders['ga-client-id'] = gaClientId;
+          // }
 
           console.log("configuratuon",config)
 
@@ -150,7 +150,7 @@ export default function LandingPage() {
       url.searchParams.set('originateFromLanding', encryptedFlag);
     }
 
-    // window.location.href = url.toString();
+    window.location.href = url.toString();
   };
 
   if (error) {
