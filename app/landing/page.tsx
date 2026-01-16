@@ -73,14 +73,15 @@ export default function LandingPage() {
             'Accept': 'application/json',
           };
 
-          // Include GA4 client ID if available
+          // Build URL with GA4 client ID as query parameter
+          const msisdnUrl = new URL(config.msisdnApiUrl);
           if (gaClientId) {
-            msisdnHeaders['ga-client-id'] = gaClientId;
+            msisdnUrl.searchParams.set('ga-client-id', gaClientId);
           }
 
           console.log("configuratuon",config)
 
-          const msisdnResponse = await fetch(config!.msisdnApiUrl, {
+          const msisdnResponse = await fetch(msisdnUrl.toString(), {
             signal: controller.signal,
             headers: msisdnHeaders,
           });
