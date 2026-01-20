@@ -151,7 +151,7 @@ export default function LandingPage() {
       url.searchParams.set('originateFromLanding', encryptedFlag);
     }
 
-    window.location.href = url.toString();
+    // window.location.href = url.toString();
   };
 
   if (error) {
