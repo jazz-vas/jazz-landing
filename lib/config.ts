@@ -7,6 +7,7 @@ export const config = {
   msisdnApiUrl: process.env.MSISDN_API_URL || '',
   httpsAppUrl: process.env.HTTPS_APP_URL || '',
   encryptionSecretKey: process.env.ENCRYPTION_SECRET_KEY || '',
+  appBaseUrl: process.env.APP_BASE_URL || '',
 };
 
 /**
@@ -17,5 +18,6 @@ export function getClientConfig() {
   return {
     httpsAppUrl: config.httpsAppUrl,
     msisdnApiUrl: config.msisdnApiUrl,
+    appBaseUrl: config.appBaseUrl,
   };
 }
