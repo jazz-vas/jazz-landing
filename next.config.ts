@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  basePath: '/landing',
+  // basePath: '/landing',
   assetPrefix: '/landing',
   images: {
     unoptimized: true,
