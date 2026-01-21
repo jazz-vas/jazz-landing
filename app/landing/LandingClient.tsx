@@ -1,0 +1,144 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import LoadingScreen from '../components/LoadingScreen';
+import { API_TIMEOUT_MS, ERROR_MESSAGES } from '@/lib/constants';
+
+interface LandingClientProps {
+  config: {
+    httpsAppUrl: string;
+    msisdnApiUrl: string;
+    appBaseUrl: string;
+  };
+  clientId: string;
+}
+
+interface EncryptResponse {
+  success: boolean;
+  data?: {
+    encryptedMsisdn?: string;
+    encryptedFlag?: string;
+  };
+  message?: string;
+}
+
+export default function LandingClient({ config, clientId }: LandingClientProps) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const processAndRedirect = async () => {
+      try {
+        // Step 1: Fetch MSISDN from external API (client-side)
+        let msisdn: string | null = null;
+
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+          // Build headers for MSISDN API request
+          const msisdnHeaders: HeadersInit = {
+            'Accept': 'application/json',
+          };
+
+          const msisdnUrl = new URL(config.msisdnApiUrl);
+
+          console.log('Configuration:', config);
+
+          const msisdnResponse = await fetch(msisdnUrl.toString(), {
+            signal: controller.signal,
+            headers: msisdnHeaders,
+          });
+
+          clearTimeout(timeoutId);
+
+          if (msisdnResponse.ok) {
+            const msisdnData = await msisdnResponse.json();
+            // Handle external API response structure
+            msisdn = msisdnData?.data || msisdnData?.msisdn || null;
+          }
+        } catch (msisdnErr) {
+          // Continue without MSISDN - not a critical failure
+          console.warn('MSISDN fetch failed:', msisdnErr);
+        }
+
+        // Step 2: Send raw MSISDN and landing flag to Next.js API for encryption
+        const encryptResponse = await fetch(`${config.appBaseUrl}/api/landing/msisdn`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            msisdn: msisdn,
+            originateFromLanding: 'true',
+          }),
+        });
+
+        const encryptResult: EncryptResponse = await encryptResponse.json();
+
+        if (!encryptResult.success || !encryptResult.data) {
+          // Redirect without encrypted data if encryption fails
+          redirectToApp(clientId, null, null, config.httpsAppUrl);
+          return;
+        }
+
+        // Redirect with server-encrypted data
+        redirectToApp(
+          clientId,
+          encryptResult.data.encryptedMsisdn || null,
+          encryptResult.data.encryptedFlag || null,
+          config.httpsAppUrl
+        );
+      } catch (err: unknown) {
+        // Show error if any critical step fails
+        console.error('Landing error:', err);
+        setError('Failed to load configuration. Please try again later.');
+        setIsLoading(false);
+      }
+    };
+
+    processAndRedirect();
+  }, [config, clientId]);
+
+  const redirectToApp = (
+    clientId: string,
+    encryptedMsisdn: string | null,
+    encryptedFlag: string | null,
+    httpsAppUrl: string
+  ): void => {
+    const url = new URL('/signin', httpsAppUrl);
+    url.searchParams.set('clientId', clientId);
+
+    if (encryptedMsisdn) {
+      url.searchParams.set('msisdn', encryptedMsisdn);
+    }
+
+    if (encryptedFlag) {
+      url.searchParams.set('originateFromLanding', encryptedFlag);
+    }
+
+    // window.location.href = url.toString();
+  };
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="bg-red-100 p-4 rounded-full">
+              <svg className="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Error</h1>
+              <p className="text-gray-600">{error}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return <LoadingScreen />;
+}
