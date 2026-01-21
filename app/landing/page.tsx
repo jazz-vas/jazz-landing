@@ -140,7 +140,7 @@ export default function LandingPage() {
     encryptedFlag: string | null,
     httpsAppUrl: string
   ): void => {
-    const url = new URL(httpsAppUrl);
+    const url = new URL('/signin', httpsAppUrl);
     url.searchParams.set('clientId', clientId);
 
     if (encryptedMsisdn) {
