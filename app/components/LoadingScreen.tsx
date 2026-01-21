@@ -6,7 +6,7 @@ export default function LoadingScreen() {
       <div className="flex flex-col items-center space-y-6">
         {/* Jazz Logo */}
         <Image
-          src="/jazz-logo.webp"
+          src="/landing/jazz-logo.webp"
           alt="Jazz Logo"
           width={160}
           height={80}
