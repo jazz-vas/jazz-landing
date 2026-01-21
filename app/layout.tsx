@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { GoogleAnalytics, GoogleTagManager } from '@next/third-parties/google';
+// import { GoogleAnalytics, GoogleTagManager } from '@next/third-parties/google';
+
+// const gaId = process.env.GA_ID;
+// const gtmId = process.env.GTM_ID;
 
 export const metadata: Metadata = {
   title: "Jazz Landing - Loading",
@@ -34,16 +37,16 @@ export default function RootLayout({
         <meta name="theme-color" content="#ffffff" />
         
         {/* Google Tag Manager preconnect */}
-        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        {/* <link rel="preconnect" href="https://www.googletagmanager.com" /> */}
       </head>
       <body className="antialiased h-screen-dynamic">
         <main className="h-full">{children}</main>
         
         {/* Google Analytics - GA4 */}
-        <GoogleAnalytics gaId="G-7H51N4FGGD" />
+        {/* {gaId && <GoogleAnalytics gaId={gaId} />} */}
         
         {/* Google Tag Manager */}
-        <GoogleTagManager gtmId="AW-10779246142" />
+        {/* {gtmId && <GoogleTagManager gtmId={gtmId} />} */}
       </body>
     </html>
   );

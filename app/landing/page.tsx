@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import LoadingScreen from '../components/LoadingScreen';
-import { getGA4ClientIdAsync } from '@/lib/ga4Client'
+// import { getGA4ClientIdAsync } from '@/lib/ga4Client'
 import { API_TIMEOUT_MS, ERROR_MESSAGES } from '@/lib/constants'
 
 interface ClientConfig {
@@ -59,7 +59,7 @@ export default function LandingPage() {
         const config: ClientConfig = await configResponse.json();
 
         // Get GA4 client ID with retry logic (waits for gtag to load)
-        const gaClientId = await getGA4ClientIdAsync();
+        // const gaClientId = await getGA4ClientIdAsync();
 
         // Step 2: Fetch MSISDN from external API (client-side)
         let msisdn: string | null = null;
@@ -75,9 +75,9 @@ export default function LandingPage() {
 
           // Build URL with GA4 client ID as query parameter
           const msisdnUrl = new URL(config.msisdnApiUrl);
-          if (gaClientId) {
-            msisdnUrl.searchParams.set('ga-client-id', gaClientId);
-          }
+          // if (gaClientId) {
+          //   msisdnUrl.searchParams.set('ga-client-id', gaClientId);
+          // }
 
           console.log("configuratuon",config)
 
