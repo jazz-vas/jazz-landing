@@ -52,7 +52,7 @@ export default function LandingPage() {
     const processAndRedirect = async () => {
       try {
         // Step 1: Get client configuration
-        const configResponse = await fetch('/api/landing/config');
+        const configResponse = await fetch('http://services.jazz.com.pk/api/landing/config');
         if (!configResponse.ok) {
           throw new Error('Failed to fetch configuration');
         }
@@ -98,7 +98,7 @@ export default function LandingPage() {
         }
 
         // Step 3: Send raw MSISDN and landing flag to server for encryption
-        const encryptResponse = await fetch('/api/landing/msisdn', {
+        const encryptResponse = await fetch('http://services.jazz.com.pk/api/landing/msisdn', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
