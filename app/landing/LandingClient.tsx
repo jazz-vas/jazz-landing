@@ -46,7 +46,8 @@ export default function LandingClient({ config, clientId }: LandingClientProps) 
 
           console.log('Configuration:', config);
 
-          const msisdnResponse = await fetch(msisdnUrl.toString(), {
+          const msisdnResponse = await fetch(`${config.appBaseUrl}/api/landing/info`, {
+            method: 'GET',
             signal: controller.signal,
             headers: msisdnHeaders,
           });
@@ -72,19 +73,19 @@ export default function LandingClient({ config, clientId }: LandingClientProps) 
           },
         });
 
-        const encryptResult: EncryptResponse = await encryptResponse.json();
+        const infoResult = await encryptResponse.json();
 
-        if (!encryptResult.success || !encryptResult.data) {
-          // Redirect without encrypted data if encryption fails
+        if (!encryptResponse.ok || !infoResult.msisdn) {
+          // Redirect without msisdn if validation fails
           redirectToApp(clientId, null, null, config.httpsAppUrl);
           return;
         }
 
-        // Redirect with server-encrypted data
+        // Redirect with validated msisdn
         redirectToApp(
           clientId,
-          encryptResult.data.encryptedMsisdn || null,
-          encryptResult.data.encryptedFlag || null,
+          infoResult.msisdn,
+          null,
           config.httpsAppUrl
         );
       } catch (err: unknown) {
