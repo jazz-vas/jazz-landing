@@ -27,6 +27,7 @@ export default function LandingClient({ config, clientId }: LandingClientProps) 
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log("testing123")
     const processAndRedirect = async () => {
       try {
         // Step 1: Fetch MSISDN from external API (client-side)
