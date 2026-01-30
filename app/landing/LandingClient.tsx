@@ -63,16 +63,13 @@ export default function LandingClient({ config, clientId }: LandingClientProps) 
           console.warn('MSISDN fetch failed:', msisdnErr);
         }
 
-        // Step 2: Send raw MSISDN and landing flag to Next.js API for encryption
-        const encryptResponse = await fetch(`${config.appBaseUrl}/api/landing/msisdn`, {
-          method: 'POST',
+        // Step 2: Call info endpoint with msisdn in headers
+        const encryptResponse = await fetch(`${config.appBaseUrl}/api/landing/info`, {
+          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            ...(msisdn && { 'msisdn': msisdn }),
           },
-          body: JSON.stringify({
-            msisdn: msisdn,
-            originateFromLanding: 'true',
-          }),
         });
 
         const encryptResult: EncryptResponse = await encryptResponse.json();
