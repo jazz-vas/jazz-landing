@@ -46,7 +46,8 @@ export default function LandingClient({ config, clientId }: LandingClientProps) 
 
           console.log('Configuration:', config);
 
-          const msisdnResponse = await fetch(msisdnUrl.toString(), {
+          const msisdnResponse = await fetch(`${config.appBaseUrl}/api/landing/info`, {
+            method: 'GET',
             signal: controller.signal,
             headers: msisdnHeaders,
           });
@@ -63,31 +64,28 @@ export default function LandingClient({ config, clientId }: LandingClientProps) 
           console.warn('MSISDN fetch failed:', msisdnErr);
         }
 
-        // Step 2: Send raw MSISDN and landing flag to Next.js API for encryption
-        const encryptResponse = await fetch(`${config.appBaseUrl}/api/landing/msisdn`, {
-          method: 'POST',
+        // Step 2: Call info endpoint with msisdn in headers
+        const encryptResponse = await fetch(`${config.appBaseUrl}/api/landing/info`, {
+          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            ...(msisdn && { 'msisdn': msisdn }),
           },
-          body: JSON.stringify({
-            msisdn: msisdn,
-            originateFromLanding: 'true',
-          }),
         });
 
-        const encryptResult: EncryptResponse = await encryptResponse.json();
+        const infoResult = await encryptResponse.json();
 
-        if (!encryptResult.success || !encryptResult.data) {
-          // Redirect without encrypted data if encryption fails
+        if (!encryptResponse.ok || !infoResult.msisdn) {
+          // Redirect without msisdn if validation fails
           redirectToApp(clientId, null, null, config.httpsAppUrl);
           return;
         }
 
-        // Redirect with server-encrypted data
+        // Redirect with validated msisdn
         redirectToApp(
           clientId,
-          encryptResult.data.encryptedMsisdn || null,
-          encryptResult.data.encryptedFlag || null,
+          infoResult.msisdn,
+          null,
           config.httpsAppUrl
         );
       } catch (err: unknown) {
