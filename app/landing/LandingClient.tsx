@@ -98,8 +98,7 @@ export default function LandingClient({ config, productName, variant, partnerRef
     encryptedFlag: string | null,
     httpsAppUrl: string
   ): void => {
-    const url = new URL('/signin', httpsAppUrl);
-    url.searchParams.set('productName', productName);
+    const url = new URL(`/signin/${productName}`, httpsAppUrl);
     url.searchParams.set('variant', variant);
     url.searchParams.set('ref', partnerRef);
     url.searchParams.set('utm_campaign', utm_campaign);
