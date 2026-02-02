@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import LoadingScreen from '../components/LoadingScreen';
-import { API_TIMEOUT_MS, ERROR_MESSAGES } from '@/lib/constants';
+import { API_TIMEOUT_MS, ERROR_MESSAGES } from '@/lib/constants'
 
 interface LandingClientProps {
   config: {
