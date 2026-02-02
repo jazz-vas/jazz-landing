@@ -47,7 +47,13 @@ export default function LandingClient({ config, productName, variant, partnerRef
 
           console.log('Configuration:', config);
 
-          const msisdnResponse = await fetch(`${config.appBaseUrl}/api/landing/info`, {
+          // Build info endpoint URL with query params
+          const infoUrl = new URL(`${config.appBaseUrl}/api/landing/info`);
+          infoUrl.searchParams.set('variant', variant);
+          infoUrl.searchParams.set('partnerRef', partnerRef);
+          infoUrl.searchParams.set('utm_campaign', utm_campaign);
+
+          const msisdnResponse = await fetch(infoUrl.toString(), {
             method: 'GET',
             signal: controller.signal,
             headers: msisdnHeaders,
@@ -57,16 +63,14 @@ export default function LandingClient({ config, productName, variant, partnerRef
 
           if (msisdnResponse.ok) {
             const msisdnData = await msisdnResponse.json();
-            // Extract encrypted redis key and encrypted flag from response
+            // Extract encrypted redis key, encrypted flag, and encrypted campaign data from response
 
-            // Redirect with encrypted redis key and encrypted flag
+            // Redirect with encrypted campaign data, redis key and encrypted flag
             redirectToApp(
               productName,
-              variant,
-              partnerRef,
-              utm_campaign,
               msisdnData?.redisKey || null,
               msisdnData?.originateFromLanding || null,
+              msisdnData?.encryptedCampaignData || null,
               config.httpsAppUrl
             );
             return;
@@ -77,7 +81,7 @@ export default function LandingClient({ config, productName, variant, partnerRef
         }
 
         // If no msisdn from info endpoint, redirect without it
-        redirectToApp(productName, variant, partnerRef, utm_campaign, null, null, config.httpsAppUrl);
+        redirectToApp(productName, null, null, null, config.httpsAppUrl);
       } catch (err: unknown) {
         // Show error if any critical step fails
         console.error('Landing error:', err);
@@ -91,17 +95,16 @@ export default function LandingClient({ config, productName, variant, partnerRef
 
   const redirectToApp = (
     productName: string,
-    variant: string,
-    partnerRef: string,
-    utm_campaign: string,
     encryptedRedisKey: string | null,
     encryptedFlag: string | null,
+    encryptedCampaignData: string | null,
     httpsAppUrl: string
   ): void => {
     const url = new URL(`/signin/${productName}`, httpsAppUrl);
-    url.searchParams.set('variant', variant);
-    url.searchParams.set('ref', partnerRef);
-    url.searchParams.set('utm_campaign', utm_campaign);
+
+    if (encryptedCampaignData) {
+      url.searchParams.set('id', encryptedCampaignData);
+    }
 
     if (encryptedRedisKey) {
       url.searchParams.set('redisKey', encryptedRedisKey);
