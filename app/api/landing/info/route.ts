@@ -23,6 +23,26 @@ export async function GET(request: NextRequest) {
 
     const response: any = {};
 
+    // Extract campaign info from query params
+    const variant = request.nextUrl.searchParams.get('variant');
+    const partnerRef = request.nextUrl.searchParams.get('partnerRef');
+    const utm_campaign = request.nextUrl.searchParams.get('utm_campaign');
+
+    // Encrypt campaign data if all params are provided
+    if (variant && partnerRef && utm_campaign) {
+        try {
+            const campaignData = {
+                variationId: parseInt(variant, 10),
+                partnerId: parseInt(partnerRef, 10),
+                campaignName: utm_campaign,
+            };
+            response.encryptedCampaignData = encrypt(JSON.stringify(campaignData), encryptionSecret);
+        } catch (encryptErr) {
+            console.error('Failed to encrypt campaign data:', encryptErr);
+            // Continue even if encryption fails - not critical
+        }
+    }
+
     // Process MSISDN if provided
     if (encryptedMsisdn) {
         if (!encryptionKey) {
