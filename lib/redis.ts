@@ -58,7 +58,7 @@ export async function storeDecryptedMsisdn(
 
   try {
     const uuid = uuidv4();
-    const key = `${userIp}:${uuid}`;
+    const key = `jazz-vas:${userIp}:${uuid}`;
 
     // Store both decrypted and encrypted msisdn as JSON
     const data = JSON.stringify({
