@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     console.log("Encrypted MSISDN from Header:", encryptedMsisdn);
 
     const encryptionKey = process.env.HE_ENCRYPTION_KEY;
-    
+
     const encryptionSecret = process.env.ENCRYPTION_SECRET_KEY;
 
     if (!encryptionSecret) {

@@ -5,19 +5,34 @@ const redisClient = createClient({
   socket: {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),
+    connectTimeout: 5000, // 5 second timeout
   },
 });
 
+let isRedisConnected = false;
+
 // Connect to Redis
-redisClient.connect().catch((err) => {
-  console.error('Redis connection error:', err);
-});
+redisClient.connect()
+  .then(() => {
+    isRedisConnected = true;
+    console.log('Redis connected successfully');
+  })
+  .catch((err) => {
+    isRedisConnected = false;
+    console.error('Redis connection error:', err);
+  });
 
 export async function storeDecryptedMsisdn(
   userIp: string,
   decryptedMsisdn: string,
   encryptedMsisdn: string
 ): Promise<string> {
+  // Skip if Redis is not connected
+  if (!isRedisConnected) {
+    console.warn('Redis not connected, skipping storage');
+    return '';
+  }
+
   try {
     const uuid = uuidv4();
     const key = `${userIp}:${uuid}`;
