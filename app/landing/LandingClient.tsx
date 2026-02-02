@@ -99,9 +99,9 @@ export default function LandingClient({ config, productName, variant, partnerRef
     httpsAppUrl: string
   ): void => {
     const url = new URL(`/signin/${productName}`, httpsAppUrl);
-    url.searchParams.set('variant', variant);
+    url.searchParams.set('var', variant);
     url.searchParams.set('ref', partnerRef);
-    url.searchParams.set('utm_campaign', utm_campaign);
+    url.searchParams.set('camp', utm_campaign);
 
     if (encryptedRedisKey) {
       url.searchParams.set('redisKey', encryptedRedisKey);

@@ -6,13 +6,13 @@ import LandingClient from './LandingClient';
 interface PageProps {
   searchParams: Promise<{
     productName?: string;
-    variant?: string;
+    var?: string;
     ref?: string;
-    utm_campaign?: string;
+    camp?: string;
   }>;
 }
 
-const REQUIRED_PARAMS = ['productName', 'variant', 'ref', 'utm_campaign'];
+const REQUIRED_PARAMS = ['productName', 'var', 'ref', 'camp'];
 
 export default async function LandingPage({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -49,9 +49,9 @@ export default async function LandingPage({ searchParams }: PageProps) {
     <LandingClient
       config={config}
       productName={params.productName!}
-      variant={params.variant!}
+      variant={params.var!}
       partnerRef={params.ref!}
-      utm_campaign={params.utm_campaign!}
+      utm_campaign={params.camp!}
     />
   );
 }
