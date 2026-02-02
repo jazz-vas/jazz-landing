@@ -10,7 +10,10 @@ interface LandingClientProps {
     msisdnApiUrl: string;
     appBaseUrl: string;
   };
-  clientId: string;
+  productName: string;
+  variant: string;
+  partnerRef: string;
+  utm_campaign: string;
 }
 
 interface EncryptResponse {
@@ -22,7 +25,7 @@ interface EncryptResponse {
   message?: string;
 }
 
-export default function LandingClient({ config, clientId }: LandingClientProps) {
+export default function LandingClient({ config, productName, variant, partnerRef, utm_campaign }: LandingClientProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,8 +34,6 @@ export default function LandingClient({ config, clientId }: LandingClientProps) 
     const processAndRedirect = async () => {
       try {
         // Step 1: Fetch MSISDN from external API (client-side)
-        let msisdn: string | null = null;
-
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
@@ -56,41 +57,27 @@ export default function LandingClient({ config, clientId }: LandingClientProps) 
 
           if (msisdnResponse.ok) {
             const msisdnData = await msisdnResponse.json();
-            // Handle external API response structure
-            msisdn = msisdnData?.data || msisdnData?.msisdn || null;
+            // Extract encrypted redis key and encrypted flag from response
+
+            // Redirect with encrypted redis key and encrypted flag
+            redirectToApp(
+              productName,
+              variant,
+              partnerRef,
+              utm_campaign,
+              msisdnData?.redisKey || null,
+              msisdnData?.originateFromLanding || null,
+              config.httpsAppUrl
+            );
+            return;
           }
         } catch (msisdnErr) {
           // Continue without MSISDN - not a critical failure
           console.warn('MSISDN fetch failed:', msisdnErr);
         }
 
-        // Step 2: Send raw MSISDN and landing flag to Next.js API for encryption
-        const encryptResponse = await fetch(`${config.appBaseUrl}/api/landing/msisdn`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            msisdn: msisdn,
-            originateFromLanding: 'true',
-          }),
-        });
-
-        const encryptResult: EncryptResponse = await encryptResponse.json();
-
-        if (!encryptResult.success || !encryptResult.data) {
-          // Redirect without encrypted data if encryption fails
-          redirectToApp(clientId, null, null, config.httpsAppUrl);
-          return;
-        }
-
-        // Redirect with server-encrypted data
-        redirectToApp(
-          clientId,
-          encryptResult.data.encryptedMsisdn || null,
-          encryptResult.data.encryptedFlag || null,
-          config.httpsAppUrl
-        );
+        // If no msisdn from info endpoint, redirect without it
+        redirectToApp(productName, variant, partnerRef, utm_campaign, null, null, config.httpsAppUrl);
       } catch (err: unknown) {
         // Show error if any critical step fails
         console.error('Landing error:', err);
@@ -100,24 +87,31 @@ export default function LandingClient({ config, clientId }: LandingClientProps) 
     };
 
     processAndRedirect();
-  }, [config, clientId]);
+  }, [config, productName, variant, partnerRef, utm_campaign]);
 
   const redirectToApp = (
-    clientId: string,
-    encryptedMsisdn: string | null,
+    productName: string,
+    variant: string,
+    partnerRef: string,
+    utm_campaign: string,
+    encryptedRedisKey: string | null,
     encryptedFlag: string | null,
     httpsAppUrl: string
   ): void => {
-    const url = new URL('/signin', httpsAppUrl);
-    url.searchParams.set('clientId', clientId);
+    const url = new URL(`/signin/${productName}`, httpsAppUrl);
+    url.searchParams.set('variant', variant);
+    url.searchParams.set('ref', partnerRef);
+    url.searchParams.set('utm_campaign', utm_campaign);
 
-    if (encryptedMsisdn) {
-      url.searchParams.set('msisdn', encryptedMsisdn);
+    if (encryptedRedisKey) {
+      url.searchParams.set('redisKey', encryptedRedisKey);
     }
 
     if (encryptedFlag) {
       url.searchParams.set('originateFromLanding', encryptedFlag);
     }
+
+    console.log("Redirecting to:", url.toString());
 
     window.location.href = url.toString();
   };

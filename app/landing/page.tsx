@@ -4,16 +4,24 @@ import { ERROR_MESSAGES } from '@/lib/constants';
 import LandingClient from './LandingClient';
 
 interface PageProps {
-  searchParams: Promise<{ clientId?: string }>;
+  searchParams: Promise<{
+    productName?: string;
+    variant?: string;
+    ref?: string;
+    utm_campaign?: string;
+  }>;
 }
+
+const REQUIRED_PARAMS = ['productName', 'variant', 'ref', 'utm_campaign'];
 
 export default async function LandingPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const clientId = params.clientId;
 
-  // Server-side validation
-  if (!clientId) {
-    // Return error UI directly for missing clientId
+  // Server-side validation - check for all required parameters
+  const missingParams = REQUIRED_PARAMS.filter(param => !params[param as keyof typeof params]);
+
+  if (missingParams.length > 0) {
+    // Return error UI for missing parameters
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
@@ -25,7 +33,7 @@ export default async function LandingPage({ searchParams }: PageProps) {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Error</h1>
-              <p className="text-gray-600">{ERROR_MESSAGES.MISSING_CLIENT_ID}</p>
+              <p className="text-gray-600">Missing required parameters: {missingParams.join(', ')}</p>
             </div>
           </div>
         </div>
@@ -36,6 +44,14 @@ export default async function LandingPage({ searchParams }: PageProps) {
   // Get server-side config (has access to env variables)
   const config = getClientConfig();
 
-  // Pass config and clientId to client component
-  return <LandingClient config={config} clientId={clientId} />;
+  // Pass config and params to client component
+  return (
+    <LandingClient
+      config={config}
+      productName={params.productName!}
+      variant={params.variant!}
+      partnerRef={params.ref!}
+      utm_campaign={params.utm_campaign!}
+    />
+  );
 }

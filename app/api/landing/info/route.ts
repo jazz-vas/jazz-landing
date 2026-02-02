@@ -1,51 +1,85 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { decryptMsisdn, isValidMsisdn } from '@/lib/decryption';
+import { storeDecryptedMsisdn } from '@/lib/redis';
+import { encrypt } from '@/lib/encryption';
 
 export async function GET(request: NextRequest) {
-  // Check for msisdn header
-  const encryptedMsisdn = request.headers.get('msisdn');
-  console.log("Encrypted MSISDN from Header:", encryptedMsisdn);
+    // Check for msisdn header
+    let encryptedMsisdn = request.headers.get('msisdn');
+    encryptedMsisdn="dasdasd"
 
-  if (!encryptedMsisdn) {
-    return NextResponse.json(
-      { error: 'Missing msisdn header' },
-      { status: 400 }
-    );
-  }
+    console.log("Encrypted MSISDN from Header:", encryptedMsisdn);
 
-  // Get encryption key from environment variables
-  const encryptionKey = process.env.HE_ENCRYPTION_KEY;
+    const encryptionKey = process.env.HE_ENCRYPTION_KEY;
 
-  if (!encryptionKey) {
-    console.error('HE_ENCRYPTION_KEY not found in environment variables');
-    return NextResponse.json(
-      { error: 'Server configuration error' },
-      { status: 500 }
-    );
-  }
+    const encryptionSecret = process.env.ENCRYPTION_SECRET_KEY;
 
-  // Decrypt the msisdn
-  const decryptedMsisdn = decryptMsisdn(encryptedMsisdn, encryptionKey);
+    if (!encryptionSecret) {
+        console.error('ENCRYPTION_SECRET_KEY not found in environment variables');
+        return NextResponse.json(
+            { error: 'Server configuration error' },
+            { status: 500 }
+        );
+    }
 
-  if (!decryptedMsisdn || !isValidMsisdn(decryptedMsisdn)) {
-    return NextResponse.json(
-      { error: 'Invalid or tampered msisdn' },
-      { status: 400 }
-    );
-  }
+    const response: any = {};
 
-  // Log all request headers
-  const headers: Record<string, string> = {};
+    // Process MSISDN if provided
+    if (encryptedMsisdn) {
+        if (!encryptionKey) {
+            console.error('HE_ENCRYPTION_KEY not found in environment variables');
+            return NextResponse.json(
+                { error: 'Server configuration error' },
+                { status: 500 }
+            );
+        }
 
-  request.headers.forEach((value, key) => {
-    headers[key] = value;
-  });
+        // Decrypt the msisdn
+        let decryptedMsisdn = decryptMsisdn(encryptedMsisdn, encryptionKey);
+        decryptedMsisdn="923086094856"
 
-  console.log('Complete Request Headers:', headers);
-  console.log('Decrypted MSISDN:', decryptedMsisdn);
+        if (decryptedMsisdn && isValidMsisdn(decryptedMsisdn)) {
+            // Log all request headers
+            const headers: Record<string, string> = {};
+            request.headers.forEach((value, key) => {
+                headers[key] = value;
+            });
 
-  return NextResponse.json({
-    message: 'Headers logged and msisdn validated',
-    msisdn: decryptedMsisdn,
-  });
+            console.log('Complete Request Headers:', headers);
+            console.log('Decrypted MSISDN:', decryptedMsisdn);
+
+            // Get user IP from request
+            const userIp =
+                request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+                request.headers.get('x-real-ip') ||
+                'unknown';
+
+            // Store decrypted MSISDN in Redis
+            try {
+                // Encrypt the decrypted msisdn
+                const encryptedMsisdnValue = encrypt(decryptedMsisdn, encryptionSecret);
+                response.msisdn = encryptedMsisdnValue;
+
+                const redisKey = await storeDecryptedMsisdn(userIp, decryptedMsisdn, encryptedMsisdnValue);
+
+                // Store redis key without encryption - Redis is not publicly exposed
+                if (redisKey) {
+                    response.redisKey = redisKey;
+                }
+            } catch (redisErr) {
+                console.error('Failed to store MSISDN in Redis:', redisErr);
+                // Continue even if Redis fails - not a critical failure
+            }
+        } else {
+            console.warn('Invalid or tampered msisdn');
+        }
+    }
+
+    // Always encrypt and return originateFromLanding flag
+    response.originateFromLanding = encrypt('true', encryptionSecret);
+
+    return NextResponse.json({
+        message: 'Headers logged and msisdn validated',
+        ...response,
+    });
 }
