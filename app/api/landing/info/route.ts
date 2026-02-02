@@ -6,7 +6,6 @@ import { encrypt } from '@/lib/encryption';
 export async function GET(request: NextRequest) {
     // Check for msisdn header
     let encryptedMsisdn = request.headers.get('msisdn');
-    encryptedMsisdn="dasdasd"
 
     console.log("Encrypted MSISDN from Header:", encryptedMsisdn);
 
@@ -36,7 +35,6 @@ export async function GET(request: NextRequest) {
 
         // Decrypt the msisdn
         let decryptedMsisdn = decryptMsisdn(encryptedMsisdn, encryptionKey);
-        decryptedMsisdn="923086094856"
 
         if (decryptedMsisdn && isValidMsisdn(decryptedMsisdn)) {
             // Log all request headers
