@@ -6,7 +6,7 @@ const isDev = nodeEnv === 'development';
 
 // Check for required Redis credentials in non-development environments
 if (!isDev) {
-  if (!process.env.REDIS_USERNAME || !process.env.REDIS_PASSWORD) {
+  if (!process.env.REDIS_USER || !process.env.REDIS_PASSWORD) {
     throw new Error(
       '[Redis] REDIS_USERNAME and REDIS_PASSWORD are required for non-development environments'
     );
@@ -18,7 +18,7 @@ let redisUrl: string;
 if (isDev) {
   redisUrl = 'redis://localhost:6379';
 } else {
-  const username = encodeURIComponent(process.env.REDIS_USERNAME || '');
+  const username = encodeURIComponent(process.env.REDIS_USER || '');
   const password = encodeURIComponent(process.env.REDIS_PASSWORD || '');
   const host = process.env.REDIS_HOST || 'localhost';
   const port = process.env.REDIS_PORT || '6379';
