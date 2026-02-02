@@ -1,55 +1,74 @@
 import { createClient } from 'redis';
 import { v4 as uuidv4 } from 'uuid';
 
-const nodeEnv = process.env.NODE_ENV;
-const isDev = nodeEnv === 'development';
-
-// Check for required Redis credentials in non-development environments
-if (!isDev) {
-  if (!process.env.REDIS_USER || !process.env.REDIS_PASSWORD) {
-    throw new Error(
-      '[Redis] REDIS_USERNAME and REDIS_PASSWORD are required for non-development environments'
-    );
-  }
-}
-
-// Construct Redis URL based on environment
-let redisUrl: string;
-if (isDev) {
-  redisUrl = 'redis://localhost:6379';
-} else {
-  const username = encodeURIComponent(process.env.REDIS_USER || '');
-  const password = encodeURIComponent(process.env.REDIS_PASSWORD || '');
-  const host = process.env.REDIS_HOST || 'localhost';
-  const port = process.env.REDIS_PORT || '6379';
-  redisUrl = `redis://${username}:${password}@${host}:${port}`;
-}
-
-const redisClient = createClient({
-  url: redisUrl,
-  socket: {
-    connectTimeout: 5000, // 5 second timeout
-  },
-});
-
+let redisClient: any = null;
 let isRedisConnected = false;
 
-// Connect to Redis
-redisClient.connect()
-  .then(() => {
-    isRedisConnected = true;
-    console.log('Redis connected successfully');
-  })
-  .catch((err) => {
+/**
+ * Initialize and connect to Redis
+ */
+async function initializeRedis() {
+  if (redisClient) {
+    return;
+  }
+
+  const nodeEnv = process.env.NODE_ENV;
+  const isDev = nodeEnv === 'development';
+
+  // Check for required Redis credentials in non-development environments
+  if (!isDev) {
+    if (!process.env.REDIS_USER || !process.env.REDIS_PASSWORD) {
+      throw new Error(
+        '[Redis] REDIS_USER and REDIS_PASSWORD are required for non-development environments'
+      );
+    }
+  }
+
+  // Construct Redis URL based on environment
+  let redisUrl: string;
+  if (isDev) {
+    redisUrl = 'redis://localhost:6379';
+  } else {
+    const username = encodeURIComponent(process.env.REDIS_USER || '');
+    const password = encodeURIComponent(process.env.REDIS_PASSWORD || '');
+    const host = process.env.REDIS_HOST || 'localhost';
+    const port = process.env.REDIS_PORT || '6379';
+    redisUrl = `redis://${username}:${password}@${host}:${port}`;
+  }
+
+  redisClient = createClient({
+    url: redisUrl,
+    socket: {
+      connectTimeout: 5000, // 5 second timeout
+    },
+  });
+
+  redisClient.on('error', (err: any) => {
     isRedisConnected = false;
     console.error('Redis connection error:', err);
   });
+
+  redisClient.on('connect', () => {
+    isRedisConnected = true;
+    console.log('Redis connected successfully');
+  });
+
+  try {
+    await redisClient.connect();
+    isRedisConnected = true;
+  } catch (err) {
+    isRedisConnected = false;
+    console.error('Redis connection error:', err);
+  }
+}
 
 export async function storeDecryptedMsisdn(
   userIp: string,
   decryptedMsisdn: string,
   encryptedMsisdn: string
 ): Promise<string> {
+  await initializeRedis();
+
   // Skip if Redis is not connected
   if (!isRedisConnected) {
     console.warn('Redis not connected, skipping storage');
@@ -78,6 +97,8 @@ export async function storeDecryptedMsisdn(
 }
 
 export async function getDecryptedMsisdn(key: string): Promise<string | null> {
+  await initializeRedis();
+
   try {
     const data = await redisClient.get(key);
     if (!data) return null;
@@ -91,6 +112,8 @@ export async function getDecryptedMsisdn(key: string): Promise<string | null> {
 }
 
 export async function getEncryptedMsisdn(key: string): Promise<string | null> {
+  await initializeRedis();
+
   try {
     const data = await redisClient.get(key);
     if (!data) return null;
