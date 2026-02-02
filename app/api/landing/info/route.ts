@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     if (variant && partnerRef && utm_campaign) {
         try {
             const campaignData = {
-                variationId: parseInt(variant, 10),
+                variantId: parseInt(variant, 10),
                 partnerId: parseInt(partnerRef, 10),
                 campaignName: utm_campaign,
             };
