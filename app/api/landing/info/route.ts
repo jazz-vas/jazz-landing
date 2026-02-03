@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
                 'unknown';
 
             const campaignData = {
-                variantId: parseInt(variant, 10),
+                variationName: variant,
                 partnerId: parseInt(partnerRef, 10),
                 campaignName: utm_campaign,
             };
