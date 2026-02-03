@@ -125,3 +125,56 @@ export async function getEncryptedMsisdn(key: string): Promise<string | null> {
     throw error;
   }
 }
+
+export async function storeCampaignData(
+  userIp: string,
+  campaignData: {
+    variantId: number;
+    partnerId: number;
+    campaignName: string;
+  }
+): Promise<string> {
+  await initializeRedis();
+
+  // Skip if Redis is not connected
+  if (!isRedisConnected) {
+    console.warn('Redis not connected, skipping campaign data storage');
+    return '';
+  }
+
+  try {
+    const uuid = uuidv4();
+    const key = `jazz-vas:${userIp}:${uuid}`;
+
+    // Store campaign data as JSON
+    const data = JSON.stringify(campaignData);
+
+    // Store with TTL of 5 minutes (300 seconds)
+    await redisClient.setEx(key, 300, data);
+
+    console.log(`Stored campaign data in Redis with key: ${key}`);
+    return key;
+  } catch (error) {
+    console.error('Error storing campaign data in Redis:', error);
+    throw error;
+  }
+}
+
+export async function getCampaignData(key: string): Promise<{
+  productName: string;
+  variantId: number;
+  partnerId: number;
+  campaignName: string;
+} | null> {
+  await initializeRedis();
+
+  try {
+    const data = await redisClient.get(key);
+    if (!data) return null;
+
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error retrieving campaign data from Redis:', error);
+    throw error;
+  }
+}

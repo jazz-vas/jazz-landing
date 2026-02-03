@@ -11,9 +11,9 @@ interface LandingClientProps {
     appBaseUrl: string;
   };
   productName: string;
-  variant: string;
-  partnerRef: string;
-  utm_campaign: string;
+  variant?: string;
+  partnerRef?: string;
+  utm_campaign?: string;
 }
 
 interface EncryptResponse {
@@ -47,11 +47,15 @@ export default function LandingClient({ config, productName, variant, partnerRef
 
           console.log('Configuration:', config);
 
-          // Build info endpoint URL with query params
+          // Build info endpoint URL
           const infoUrl = new URL(`${config.appBaseUrl}/api/landing/info`);
-          infoUrl.searchParams.set('variant', variant);
-          infoUrl.searchParams.set('partnerRef', partnerRef);
-          infoUrl.searchParams.set('utm_campaign', utm_campaign);
+          
+          // Only add campaign params if they are provided
+          if (variant && partnerRef && utm_campaign) {
+            infoUrl.searchParams.set('variant', variant);
+            infoUrl.searchParams.set('partnerRef', partnerRef);
+            infoUrl.searchParams.set('utm_campaign', utm_campaign);
+          }
 
           const msisdnResponse = await fetch(infoUrl.toString(), {
             method: 'GET',
@@ -63,14 +67,14 @@ export default function LandingClient({ config, productName, variant, partnerRef
 
           if (msisdnResponse.ok) {
             const msisdnData = await msisdnResponse.json();
-            // Extract encrypted redis key, encrypted flag, and encrypted campaign data from response
+            // Extract campaign data key, redis key, and encrypted flag from response
 
-            // Redirect with encrypted campaign data, redis key and encrypted flag
+            // Redirect with campaign data key, redis key and encrypted flag
             redirectToApp(
               productName,
+              msisdnData?.campaignDataKey || null,
               msisdnData?.redisKey || null,
               msisdnData?.originateFromLanding || null,
-              msisdnData?.encryptedCampaignData || null,
               config.httpsAppUrl
             );
             return;
@@ -95,15 +99,15 @@ export default function LandingClient({ config, productName, variant, partnerRef
 
   const redirectToApp = (
     productName: string,
+    campaignDataKey: string | null,
     encryptedRedisKey: string | null,
     encryptedFlag: string | null,
-    encryptedCampaignData: string | null,
     httpsAppUrl: string
   ): void => {
     const url = new URL(`/signin/${productName}`, httpsAppUrl);
 
-    if (encryptedCampaignData) {
-      url.searchParams.set('id', encryptedCampaignData);
+    if (campaignDataKey) {
+      url.searchParams.set('campaignDataKey', campaignDataKey);
     }
 
     if (encryptedRedisKey) {
