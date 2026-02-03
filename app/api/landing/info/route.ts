@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
             const campaignDataKey = await storeCampaignData(userIp, campaignData);
             if (campaignDataKey) {
-                response.campaignDataKey = campaignDataKey;
+                response.campaignDataKey = encrypt(campaignDataKey, encryptionSecret);
             }
         } catch (storeErr) {
             console.error('Failed to store campaign data in Redis:', storeErr);
