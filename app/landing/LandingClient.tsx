@@ -11,9 +11,10 @@ interface LandingClientProps {
     appBaseUrl: string;
   };
   productName: string;
-  variant: string;
-  partnerRef: string;
-  utm_campaign: string;
+  variant?: string;
+  partnerRef?: string;
+  utm_campaign?: string;
+  campaignRedisKey?: string | null;
 }
 
 interface EncryptResponse {
@@ -25,7 +26,7 @@ interface EncryptResponse {
   message?: string;
 }
 
-export default function LandingClient({ config, productName, variant, partnerRef, utm_campaign }: LandingClientProps) {
+export default function LandingClient({ config, productName, variant, partnerRef, utm_campaign, campaignRedisKey }: LandingClientProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,11 +48,15 @@ export default function LandingClient({ config, productName, variant, partnerRef
 
           console.log('Configuration:', config);
 
-          // Build info endpoint URL with query params
+          // Build info endpoint URL
           const infoUrl = new URL(`${config.appBaseUrl}/api/landing/info`);
-          infoUrl.searchParams.set('variant', variant);
-          infoUrl.searchParams.set('partnerRef', partnerRef);
-          infoUrl.searchParams.set('utm_campaign', utm_campaign);
+
+          // Only add campaign params if they are provided
+          if (variant && partnerRef && utm_campaign) {
+            infoUrl.searchParams.set('variant', variant);
+            infoUrl.searchParams.set('partnerRef', partnerRef);
+            infoUrl.searchParams.set('utm_campaign', utm_campaign);
+          }
 
           const msisdnResponse = await fetch(infoUrl.toString(), {
             method: 'GET',
@@ -63,15 +68,16 @@ export default function LandingClient({ config, productName, variant, partnerRef
 
           if (msisdnResponse.ok) {
             const msisdnData = await msisdnResponse.json();
-            // Extract encrypted redis key, encrypted flag, and encrypted campaign data from response
+            // Extract campaign data key, redis key, and encrypted flag from response
 
-            // Redirect with encrypted campaign data, redis key and encrypted flag
+            // Redirect with campaign data key, redis key and encrypted flag
             redirectToApp(
               productName,
+              msisdnData?.campaignDataKey || null,
               msisdnData?.redisKey || null,
               msisdnData?.originateFromLanding || null,
-              msisdnData?.encryptedCampaignData || null,
-              config.httpsAppUrl
+              config.httpsAppUrl,
+              campaignRedisKey || null
             );
             return;
           }
@@ -81,7 +87,7 @@ export default function LandingClient({ config, productName, variant, partnerRef
         }
 
         // If no msisdn from info endpoint, redirect without it
-        redirectToApp(productName, null, null, null, config.httpsAppUrl);
+        redirectToApp(productName, null, null, null, config.httpsAppUrl, campaignRedisKey || null);
       } catch (err: unknown) {
         // Show error if any critical step fails
         console.error('Landing error:', err);
@@ -91,19 +97,20 @@ export default function LandingClient({ config, productName, variant, partnerRef
     };
 
     processAndRedirect();
-  }, [config, productName, variant, partnerRef, utm_campaign]);
+  }, [config, productName, variant, partnerRef, utm_campaign, campaignRedisKey]);
 
   const redirectToApp = (
     productName: string,
+    campaignDataKey: string | null,
     encryptedRedisKey: string | null,
     encryptedFlag: string | null,
-    encryptedCampaignData: string | null,
-    httpsAppUrl: string
+    httpsAppUrl: string,
+    campaignRedisKey: string | null
   ): void => {
     const url = new URL(`/signin/${productName}`, httpsAppUrl);
 
-    if (encryptedCampaignData) {
-      url.searchParams.set('id', encryptedCampaignData);
+    if (campaignDataKey) {
+      url.searchParams.set('id', campaignDataKey);
     }
 
     if (encryptedRedisKey) {
@@ -114,7 +121,9 @@ export default function LandingClient({ config, productName, variant, partnerRef
       url.searchParams.set('originateFromLanding', encryptedFlag);
     }
 
-    console.log("Redirecting to:", url.toString());
+    if (campaignRedisKey) {
+      url.searchParams.set('id', campaignRedisKey);
+    }
 
     window.location.href = url.toString();
   };

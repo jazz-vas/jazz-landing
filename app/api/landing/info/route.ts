@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { decryptMsisdn, isValidMsisdn } from '@/lib/decryption';
-import { storeDecryptedMsisdn } from '@/lib/redis';
+import { storeDecryptedMsisdn, storeCampaignData } from '@/lib/redis';
 import { encrypt } from '@/lib/encryption';
 
 export async function GET(request: NextRequest) {
@@ -28,18 +28,28 @@ export async function GET(request: NextRequest) {
     const partnerRef = request.nextUrl.searchParams.get('partnerRef');
     const utm_campaign = request.nextUrl.searchParams.get('utm_campaign');
 
-    // Encrypt campaign data if all params are provided
+    // Store campaign data in Redis if all params are provided
     if (variant && partnerRef && utm_campaign) {
         try {
+            // Get user IP from request
+            const userIp =
+                request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+                request.headers.get('x-real-ip') ||
+                'unknown';
+
             const campaignData = {
                 variantId: parseInt(variant, 10),
                 partnerId: parseInt(partnerRef, 10),
                 campaignName: utm_campaign,
             };
-            response.encryptedCampaignData = encrypt(JSON.stringify(campaignData), encryptionSecret);
-        } catch (encryptErr) {
-            console.error('Failed to encrypt campaign data:', encryptErr);
-            // Continue even if encryption fails - not critical
+
+            const campaignDataKey = await storeCampaignData(userIp, campaignData);
+            if (campaignDataKey) {
+                response.campaignDataKey = encrypt(campaignDataKey, encryptionSecret);
+            }
+        } catch (storeErr) {
+            console.error('Failed to store campaign data in Redis:', storeErr);
+            // Continue even if storage fails - not critical
         }
     }
 
