@@ -7,7 +7,7 @@ import LandingClient from './LandingClient';
 interface PageProps {
   searchParams: Promise<{
     campaignInfo?: string;
-    id?: string;
+    campaignRedisKey?: string;
     productName: string;
   }>;
 }
@@ -26,8 +26,8 @@ export default async function LandingPage({ searchParams }: PageProps) {
     throw new Error('productName is required');
   }
 
-  // Check for either campaignInfo or id parameter
-  if (!params.campaignInfo && !params.id) {
+  // Check for either campaignInfo or campaignRedisKey parameter
+  if (!params.campaignInfo && !params.campaignRedisKey) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
@@ -39,7 +39,7 @@ export default async function LandingPage({ searchParams }: PageProps) {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Error</h1>
-              <p className="text-gray-600">Missing required parameter: campaignInfo or id</p>
+              <p className="text-gray-600">Missing required parameter: campaignInfo or campaignRedisKey</p>
             </div>
           </div>
         </div>
@@ -154,7 +154,7 @@ export default async function LandingPage({ searchParams }: PageProps) {
   const campaignName = campaignData?.campaignName;
 
   // Pass config and campaign data to client component
-  // Only pass variant/partnerRef/utm_campaign if they came from campaignInfo (not id)
+  // Only pass variant/partnerRef/utm_campaign if they came from campaignInfo (not campaignRedisKey)
   return (
     <LandingClient
       config={config}
