@@ -14,6 +14,7 @@ interface LandingClientProps {
   variant?: string;
   partnerRef?: string;
   utm_campaign?: string;
+  campaignRedisKey?: string | null;
 }
 
 interface EncryptResponse {
@@ -25,7 +26,7 @@ interface EncryptResponse {
   message?: string;
 }
 
-export default function LandingClient({ config, productName, variant, partnerRef, utm_campaign }: LandingClientProps) {
+export default function LandingClient({ config, productName, variant, partnerRef, utm_campaign, campaignRedisKey }: LandingClientProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,7 +76,8 @@ export default function LandingClient({ config, productName, variant, partnerRef
               msisdnData?.campaignDataKey || null,
               msisdnData?.redisKey || null,
               msisdnData?.originateFromLanding || null,
-              config.httpsAppUrl
+              config.httpsAppUrl,
+              campaignRedisKey || null
             );
             return;
           }
@@ -85,7 +87,7 @@ export default function LandingClient({ config, productName, variant, partnerRef
         }
 
         // If no msisdn from info endpoint, redirect without it
-        redirectToApp(productName, null, null, null, config.httpsAppUrl);
+        redirectToApp(productName, null, null, null, config.httpsAppUrl, campaignRedisKey || null);
       } catch (err: unknown) {
         // Show error if any critical step fails
         console.error('Landing error:', err);
@@ -95,14 +97,15 @@ export default function LandingClient({ config, productName, variant, partnerRef
     };
 
     processAndRedirect();
-  }, [config, productName, variant, partnerRef, utm_campaign]);
+  }, [config, productName, variant, partnerRef, utm_campaign, campaignRedisKey]);
 
   const redirectToApp = (
     productName: string,
     campaignDataKey: string | null,
     encryptedRedisKey: string | null,
     encryptedFlag: string | null,
-    httpsAppUrl: string
+    httpsAppUrl: string,
+    campaignRedisKey: string | null
   ): void => {
     const url = new URL(`/signin/${productName}`, httpsAppUrl);
 
@@ -118,7 +121,9 @@ export default function LandingClient({ config, productName, variant, partnerRef
       url.searchParams.set('originateFromLanding', encryptedFlag);
     }
 
-    console.log("Redirecting to:", url.toString());
+    if (campaignRedisKey) {
+      url.searchParams.set('id', campaignRedisKey);
+    }
 
     window.location.href = url.toString();
   };

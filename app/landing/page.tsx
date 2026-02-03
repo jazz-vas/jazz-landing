@@ -162,6 +162,7 @@ export default async function LandingPage({ searchParams }: PageProps) {
       variant={params.campaignInfo ? variantId?.toString() : undefined}
       partnerRef={params.campaignInfo ? partnerId?.toString() : undefined}
       utm_campaign={params.campaignInfo ? campaignName : undefined}
+      campaignRedisKey={params.campaignRedisKey || null}
     />
   );
 }
