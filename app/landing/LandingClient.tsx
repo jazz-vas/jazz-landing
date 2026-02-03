@@ -49,7 +49,7 @@ export default function LandingClient({ config, productName, variant, partnerRef
 
           // Build info endpoint URL
           const infoUrl = new URL(`${config.appBaseUrl}/api/landing/info`);
-          
+
           // Only add campaign params if they are provided
           if (variant && partnerRef && utm_campaign) {
             infoUrl.searchParams.set('variant', variant);
