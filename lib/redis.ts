@@ -65,7 +65,8 @@ async function initializeRedis() {
 export async function storeDecryptedMsisdn(
   userIp: string,
   decryptedMsisdn: string,
-  encryptedMsisdn: string
+  encryptedMsisdn: string,
+  msisdnStatus: 'valid' | 'invalid' = 'valid'
 ): Promise<string> {
   await initializeRedis();
 
@@ -79,10 +80,11 @@ export async function storeDecryptedMsisdn(
     const uuid = uuidv4();
     const key = `jazz-vas:${userIp}:${uuid}`;
 
-    // Store both decrypted and encrypted msisdn as JSON
+    // Store both decrypted and encrypted msisdn as JSON with status
     const data = JSON.stringify({
       decrypted: decryptedMsisdn,
       encrypted: encryptedMsisdn,
+      msisdnStatus: msisdnStatus,
     });
 
     // Store with TTL of 1 hour (3600 seconds)
@@ -129,7 +131,7 @@ export async function getEncryptedMsisdn(key: string): Promise<string | null> {
 export async function storeCampaignData(
   userIp: string,
   campaignData: {
-    variantId: number;
+    variantName: string;
     partnerId: number;
     campaignName: string;
   }
