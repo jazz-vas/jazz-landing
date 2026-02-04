@@ -66,6 +66,12 @@ export async function GET(request: NextRequest) {
         // Decrypt the msisdn
         let decryptedMsisdn = decryptMsisdn(encryptedMsisdn, encryptionKey);
 
+        // Get user IP from request
+        const userIp =
+            request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+            request.headers.get('x-real-ip') ||
+            'unknown';
+
         if (decryptedMsisdn && isValidMsisdn(decryptedMsisdn)) {
             // Log all request headers
             const headers: Record<string, string> = {};
@@ -76,19 +82,13 @@ export async function GET(request: NextRequest) {
             console.log('Complete Request Headers:', headers);
             console.log('Decrypted MSISDN:', decryptedMsisdn);
 
-            // Get user IP from request
-            const userIp =
-                request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-                request.headers.get('x-real-ip') ||
-                'unknown';
-
             // Store decrypted MSISDN in Redis
             try {
                 // Encrypt the decrypted msisdn
                 const encryptedMsisdnValue = encrypt(decryptedMsisdn, encryptionSecret);
                 response.msisdn = encryptedMsisdnValue;
 
-                const redisKey = await storeDecryptedMsisdn(userIp, decryptedMsisdn, encryptedMsisdnValue);
+                const redisKey = await storeDecryptedMsisdn(userIp, decryptedMsisdn, encryptedMsisdnValue, 'valid');
 
                 // Store redis key without encryption - Redis is not publicly exposed
                 if (redisKey) {
@@ -98,8 +98,16 @@ export async function GET(request: NextRequest) {
                 console.error('Failed to store MSISDN in Redis:', redisErr);
                 // Continue even if Redis fails - not a critical failure
             }
-        } else {
+        } else if (decryptedMsisdn) {
             console.warn('Invalid or tampered msisdn');
+
+            // Store invalid MSISDN in Redis with invalid status
+            try {
+                const encryptedMsisdnValue = encrypt(decryptedMsisdn, encryptionSecret);
+                await storeDecryptedMsisdn(userIp, decryptedMsisdn, encryptedMsisdnValue, 'invalid');
+            } catch (redisErr) {
+                console.error('Failed to store invalid MSISDN in Redis:', redisErr);
+            }
         }
     }
 
