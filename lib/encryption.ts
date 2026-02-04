@@ -62,6 +62,50 @@ export function encrypt(plaintext: string, secretKey: string): string {
   }
 }
 
+/**
+ * Decrypts data using AES-256-GCM
+ * @param encryptedData - URL-safe base64 encoded encrypted data
+ * @param secretKey - 32-byte (256-bit) secret key as base64 string
+ * @returns Decrypted plaintext or null if decryption fails
+ */
+export function decrypt(encryptedData: string, secretKey: string): string | null {
+  try {
+    // Decode the secret key from base64
+    const key = Buffer.from(secretKey, 'base64');
+    
+    if (key.length !== KEY_LENGTH) {
+      return null;
+    }
+
+    // Convert URL-safe base64 back to standard base64
+    const standardBase64 = encryptedData
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+      .replace(/~/g, '=');
+    
+    // Decode from base64
+    const combined = Buffer.from(standardBase64, 'base64');
+    
+    // Extract IV, encrypted data, and auth tag
+    const iv = combined.subarray(0, IV_LENGTH);
+    const authTag = combined.subarray(combined.length - AUTH_TAG_LENGTH);
+    const encrypted = combined.subarray(IV_LENGTH, combined.length - AUTH_TAG_LENGTH);
+    
+    // Create decipher
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    decipher.setAuthTag(authTag);
+    
+    // Decrypt the data
+    let decrypted = decipher.update(encrypted);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    
+    return decrypted.toString('utf8');
+  } catch (error: any) {
+    console.error('❌ [HTTP] Decryption failed:', error.message);
+    return null;
+  }
+}
+
 // Example usage in your redirect function:
 /*
 const secretKey = process.env.ENCRYPTION_SECRET_KEY!;
