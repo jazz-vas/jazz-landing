@@ -31,7 +31,7 @@ export default function LandingClient({ config, productName, variant, partnerRef
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log("testing123")
+    console.log("testing1234")
     const processAndRedirect = async () => {
       try {
         // Step 1: Fetch MSISDN from external API (client-side)
