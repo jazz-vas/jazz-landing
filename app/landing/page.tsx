@@ -13,7 +13,7 @@ interface PageProps {
 }
 
 interface CampaignData {
-  variationName: string;
+  variantName: string;
   partnerId: number;
   campaignName: string;
 }
@@ -120,9 +120,11 @@ export default async function LandingPage({ searchParams }: PageProps) {
       );
     }
 
-    const { variationName, partnerId, campaignName } = campaignData;
+    const { variantName, partnerId, campaignName } = campaignData;
+    console.log('Campaign Data:', campaignData);
 
-    if (!variationName || partnerId === undefined || !campaignName) {
+    if (!variantName || partnerId === undefined || !campaignName) {
+      console.log('Incomplete campaign data:', campaignData);
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
@@ -149,7 +151,7 @@ export default async function LandingPage({ searchParams }: PageProps) {
   const config = getClientConfig();
 
   // Extract campaign fields if campaignInfo was provided
-  const variationName = campaignData?.variationName;
+  const variantName = campaignData?.variantName;
   const partnerId = campaignData?.partnerId;
   const campaignName = campaignData?.campaignName;
 
@@ -159,7 +161,7 @@ export default async function LandingPage({ searchParams }: PageProps) {
     <LandingClient
       config={config}
       productName={params.productName}
-      variant={params.campaignInfo ? variationName : undefined}
+      variant={params.campaignInfo ? variantName : undefined}
       partnerRef={params.campaignInfo ? partnerId?.toString() : undefined}
       utm_campaign={params.campaignInfo ? campaignName : undefined}
       campaignRedisKey={params.campaignRedisKey || null}

@@ -129,7 +129,7 @@ export async function getEncryptedMsisdn(key: string): Promise<string | null> {
 export async function storeCampaignData(
   userIp: string,
   campaignData: {
-    variationName: string;
+    variantName: string;
     partnerId: number;
     campaignName: string;
   }
