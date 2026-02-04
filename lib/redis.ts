@@ -151,8 +151,8 @@ export async function storeCampaignData(
     // Store campaign data as JSON
     const data = JSON.stringify(campaignData);
 
-    // Store with TTL of 5 minutes (300 seconds)
-    await redisClient.setEx(key, 300, data);
+    // Store with TTL of 10 minutes (600 seconds)
+    await redisClient.setEx(key, 600, data);
 
     console.log(`Stored campaign data in Redis with key: ${key}`);
     return key;
