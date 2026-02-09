@@ -87,8 +87,8 @@ export async function storeDecryptedMsisdn(
       msisdnStatus: msisdnStatus,
     });
 
-    // Store with TTL of 1 hour (3600 seconds)
-    await redisClient.setEx(key, 3600, data);
+    // Store with TTL of 5 minutes (300 seconds)
+    await redisClient.setEx(key, 300, data);
 
     console.log(`Stored MSISDN in Redis with key: ${key}`);
     return key;
