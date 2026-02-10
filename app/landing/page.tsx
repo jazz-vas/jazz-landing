@@ -9,6 +9,19 @@ interface PageProps {
     campaignInfo?: string;
     campaignRedisKey?: string;
     productName: string;
+    utm_campaign?: string;
+    // Click ID parameters from ad platforms
+    gclid?: string;      // Google Ads Click ID
+    gbraid?: string;     // Google Ads (iOS 14.5+ Web-to-App)
+    wbraid?: string;     // Google Ads (iOS 14.5+ App-to-Web)
+    ttclid?: string;     // TikTok Click ID
+    fbclid?: string;     // Facebook Click ID
+    msclkid?: string;    // Microsoft Ads Click ID
+    // UTM parameters for campaign tracking
+    utm_source?: string;   // Traffic source
+    utm_medium?: string;   // Marketing medium
+    utm_content?: string;  // Ad content/variation
+    utm_term?: string;     // Search term
   }>;
 }
 
@@ -155,6 +168,21 @@ export default async function LandingPage({ searchParams }: PageProps) {
   const partnerId = campaignData?.partnerId;
   const campaignName = campaignData?.campaignName;
 
+  // Extract tracking parameters
+  const trackingParams = {
+    gclid: params.gclid,
+    gbraid: params.gbraid,
+    wbraid: params.wbraid,
+    ttclid: params.ttclid,
+    fbclid: params.fbclid,
+    msclkid: params.msclkid,
+    utm_source: params.utm_source,
+    utm_medium: params.utm_medium,
+    utm_campaign: params.utm_campaign,
+    utm_content: params.utm_content,
+    utm_term: params.utm_term,
+  };
+
   // Pass config and campaign data to client component
   // Only pass variant/partnerRef/utm_campaign if they came from campaignInfo (not campaignRedisKey)
   return (
@@ -165,6 +193,7 @@ export default async function LandingPage({ searchParams }: PageProps) {
       partnerRef={params.campaignInfo ? partnerId?.toString() : undefined}
       utm_campaign={params.campaignInfo ? campaignName : undefined}
       campaignRedisKey={params.campaignRedisKey || null}
+      trackingParams={trackingParams}
     />
   );
 }

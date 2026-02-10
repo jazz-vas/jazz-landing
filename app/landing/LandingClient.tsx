@@ -4,6 +4,22 @@ import { useEffect, useState } from 'react';
 import LoadingScreen from '../components/LoadingScreen';
 import { API_TIMEOUT_MS, ERROR_MESSAGES } from '@/lib/constants';
 
+interface TrackingParams {
+  // Click ID parameters from ad platforms
+  gclid?: string;      // Google Ads Click ID
+  gbraid?: string;     // Google Ads (iOS 14.5+ Web-to-App)
+  wbraid?: string;     // Google Ads (iOS 14.5+ App-to-Web)
+  ttclid?: string;     // TikTok Click ID
+  fbclid?: string;     // Facebook Click ID
+  msclkid?: string;    // Microsoft Ads Click ID
+  // UTM parameters for campaign tracking
+  utm_source?: string;   // Traffic source
+  utm_medium?: string;   // Marketing medium
+  utm_campaign?: string; // Campaign name
+  utm_content?: string;  // Ad content/variation
+  utm_term?: string;     // Search term
+}
+
 interface LandingClientProps {
   config: {
     httpsAppUrl: string;
@@ -15,6 +31,7 @@ interface LandingClientProps {
   partnerRef?: string;
   utm_campaign?: string;
   campaignRedisKey?: string | null;
+  trackingParams: TrackingParams;
 }
 
 interface EncryptResponse {
@@ -26,7 +43,7 @@ interface EncryptResponse {
   message?: string;
 }
 
-export default function LandingClient({ config, productName, variant, partnerRef, utm_campaign, campaignRedisKey }: LandingClientProps) {
+export default function LandingClient({ config, productName, variant, partnerRef, utm_campaign, campaignRedisKey, trackingParams }: LandingClientProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,7 +94,8 @@ export default function LandingClient({ config, productName, variant, partnerRef
               msisdnData?.redisKey || null,
               msisdnData?.originateFromLanding || null,
               config.httpsAppUrl,
-              campaignRedisKey || null
+              campaignRedisKey || null,
+              trackingParams
             );
             return;
           }
@@ -87,7 +105,7 @@ export default function LandingClient({ config, productName, variant, partnerRef
         }
 
         // If no msisdn from info endpoint, redirect without it
-        redirectToApp(productName, null, null, null, config.httpsAppUrl, campaignRedisKey || null);
+        redirectToApp(productName, null, null, null, config.httpsAppUrl, campaignRedisKey || null, trackingParams);
       } catch (err: unknown) {
         // Show error if any critical step fails
         console.error('Landing error:', err);
@@ -105,25 +123,23 @@ export default function LandingClient({ config, productName, variant, partnerRef
     encryptedRedisKey: string | null,
     encryptedFlag: string | null,
     httpsAppUrl: string,
-    campaignRedisKey: string | null
+    campaignRedisKey: string | null,
+    trackingParams: TrackingParams
   ): void => {
     const url = new URL(`/signin/${productName}`, httpsAppUrl);
 
-    if (campaignDataKey) {
-      url.searchParams.set('id', campaignDataKey);
-    }
+    // Add core parameters
+    const coreParams: Record<string, string> = {
+      ...(campaignDataKey && { id: campaignDataKey }),
+      ...(encryptedRedisKey && { redisKey: encryptedRedisKey }),
+      ...(encryptedFlag && { originateFromLanding: encryptedFlag }),
+      ...(campaignRedisKey && { id: campaignRedisKey }),
+    };
 
-    if (encryptedRedisKey) {
-      url.searchParams.set('redisKey', encryptedRedisKey);
-    }
-
-    if (encryptedFlag) {
-      url.searchParams.set('originateFromLanding', encryptedFlag);
-    }
-
-    if (campaignRedisKey) {
-      url.searchParams.set('id', campaignRedisKey);
-    }
+    // Add all parameters to URL
+    Object.entries({ ...coreParams, ...trackingParams }).forEach(([key, value]) => {
+      if (value) url.searchParams.set(key, value);
+    });
 
     window.location.href = url.toString();
   };
