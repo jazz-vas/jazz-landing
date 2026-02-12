@@ -106,7 +106,11 @@ export async function GET(request: NextRequest) {
 
             // Store encrypted MSISDN in Redis with invalid status without encrypting null
             try {
-                await storeDecryptedMsisdn(userIp, null, encryptedMsisdn, 'invalid');
+                const redisKey = await storeDecryptedMsisdn(userIp, null, encryptedMsisdn, 'invalid');
+                // Store redis key without encryption - Redis is not publicly exposed
+                if (redisKey) {
+                    response.redisKey = redisKey;
+                }
             } catch (redisErr) {
                 console.error('Failed to store decryption error MSISDN in Redis:', redisErr);
             }
