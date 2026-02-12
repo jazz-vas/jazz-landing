@@ -64,8 +64,8 @@ async function initializeRedis() {
 
 export async function storeDecryptedMsisdn(
   userIp: string,
-  decryptedMsisdn: string,
-  encryptedMsisdn: string,
+  decryptedMsisdn: string | null,
+  encryptedMsisdn: string | null,
   msisdnStatus: 'valid' | 'invalid' = 'valid'
 ): Promise<string> {
   await initializeRedis();
