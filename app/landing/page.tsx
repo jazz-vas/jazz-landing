@@ -17,6 +17,7 @@ interface PageProps {
     ttclid?: string;     // TikTok Click ID
     fbclid?: string;     // Facebook Click ID
     msclkid?: string;    // Microsoft Ads Click ID
+    click_id?: string;   // Generic Click ID
     // UTM parameters for campaign tracking
     utm_source?: string;   // Traffic source
     utm_medium?: string;   // Marketing medium
@@ -176,6 +177,7 @@ export default async function LandingPage({ searchParams }: PageProps) {
     ttclid: params.ttclid,
     fbclid: params.fbclid,
     msclkid: params.msclkid,
+    click_id: params.click_id,
     utm_source: params.utm_source,
     utm_medium: params.utm_medium,
     utm_campaign: params.utm_campaign,
