@@ -12,6 +12,7 @@ interface TrackingParams {
   ttclid?: string;     // TikTok Click ID
   fbclid?: string;     // Facebook Click ID
   msclkid?: string;    // Microsoft Ads Click ID
+  click_id?: string;   // Generic Click ID
   // UTM parameters for campaign tracking
   utm_source?: string;   // Traffic source
   utm_medium?: string;   // Marketing medium
